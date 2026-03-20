@@ -115,6 +115,12 @@ function toAblyActionError(err, action) {
     );
   }
 
+  if (code === 400 && /xhr error occurred/i.test(message)) {
+    return new Error(
+      `Ably network request failed while ${action}. Check ABLY_API_KEY format, browser/network blocking, and that Ably is reachable from this device.`
+    );
+  }
+
   return new Error(`Ably error${code ? ` (${code})` : ''} while ${action}: ${message}`);
 }
 
@@ -151,6 +157,15 @@ function roomTtlMs() {
 
 function isRoomExpired(session) {
   return !!(session && session.expiresAt && Date.now() > Number(session.expiresAt));
+}
+
+function publishPendingSessionIfNeeded(channel) {
+  if (!state.isModerator || !state.pendingSession || !channel) return Promise.resolve(false);
+
+  const initial = deepClone(state.pendingSession);
+  state.pendingSession = null;
+
+  return ablyPublishState(channel, initial).then(() => true);
 }
 
 // ---- Demo Mode (BroadcastChannel + localStorage) -----------
@@ -426,10 +441,8 @@ function subscribeToSession(sessionId) {
       .then((latest) => {
         if (latest) {
           if (!isRoomExpired(latest)) handleSessionData(latest);
-        } else if (state.isModerator && state.pendingSession) {
-          const initial = deepClone(state.pendingSession);
-          state.pendingSession = null;
-          ablyPublishState(ablyChannel, initial).catch((err) => {
+        } else {
+          publishPendingSessionIfNeeded(ablyChannel).catch((err) => {
             console.error('[Planning Poker] Failed to publish initial Ably state:', err);
             showToast(err.message || 'Could not initialize room state', 'error', 7000);
           });
@@ -437,7 +450,17 @@ function subscribeToSession(sessionId) {
       })
       .catch((err) => {
         console.error('[Planning Poker] Failed to read Ably room history:', err);
-        showToast(err.message || 'Could not read room state from Ably', 'error', 7000);
+
+        publishPendingSessionIfNeeded(ablyChannel)
+          .then((published) => {
+            if (!published) {
+              showToast(err.message || 'Could not read room state from Ably', 'error', 7000);
+            }
+          })
+          .catch((publishErr) => {
+            console.error('[Planning Poker] Failed to publish initial Ably state after history error:', publishErr);
+            showToast(publishErr.message || err.message || 'Could not initialize room state from Ably', 'error', 7000);
+          });
       });
   } else {
     startDemoPoller(sessionId);

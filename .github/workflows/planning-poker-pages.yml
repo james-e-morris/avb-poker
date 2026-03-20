@@ -3,9 +3,12 @@ name: Deploy Planning Poker to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - prod
     paths:
-      - planning-poker/**
+      - index.html
+      - app.js
+      - styles.css
+      - ably-config.js
       - .github/workflows/planning-poker-pages.yml
   workflow_dispatch:
 
@@ -32,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp -R planning-poker/. dist/
+          cp index.html app.js styles.css dist/
 
           # Inject optional Ably key from GitHub secret for realtime mode.
           # If secret is empty, app auto-falls back to demo mode.

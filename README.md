@@ -5,7 +5,7 @@ This app is a static site, so it deploys cleanly to GitHub Pages.
 ## What is already set up
 
 - GitHub Actions workflow: `.github/workflows/planning-poker-pages.yml`
-- Deploy source: `planning-poker/`
+- Deploy source: repository root static files (`index.html`, `app.js`, `styles.css`)
 - Output: GitHub Pages site artifact
 - Ably key injection at deploy-time from repo secret `ABLY_API_KEY`
 
@@ -21,7 +21,7 @@ This app is a static site, so it deploys cleanly to GitHub Pages.
 
 ## Deploy behavior
 
-- Pushes to `main` that touch `planning-poker/**` trigger deploy.
+- Pushes to `prod`/`main` that touch app files or the workflow trigger deploy.
 - You can also run the workflow manually via **Actions > Deploy Planning Poker to GitHub Pages**.
 
 ## Security note

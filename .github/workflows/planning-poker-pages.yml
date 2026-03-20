@@ -37,8 +37,10 @@ jobs:
           ABLY_API_KEY: ${{ secrets['ABLY_API_KEY'] }}
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp src/js/app.js src/css/styles.css src/js/ably-config.js dist/
+          mkdir -p dist/src/js dist/src/css
+          cp src/js/app.js dist/src/js/app.js
+          cp src/js/ably-config.js dist/src/js/ably-config.js
+          cp src/css/styles.css dist/src/css/styles.css
 
           # Inject Ably key from GitHub secret as a hidden window variable.
           # This keeps the key out of version control and prevents exposure in deployed files.

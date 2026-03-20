@@ -1,0 +1,1101 @@
+/* ============================================================
+  AVB Planning Poker — styles.css
+  ============================================================ */
+
+/* ---- Variables (light default, dark overrides) ------------ */
+:root {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-fg: #ffffff;
+  --primary-light: #ede9fe;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.1);
+  --r: 8px;
+  --r-lg: 14px;
+  --font: 'Inter', system-ui, sans-serif;
+}
+
+[data-theme='dark'] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #0f172a;
+  --border: #334155;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --primary: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --primary-light: #1e1b4b;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* ---- Reset ------------------------------------------------ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html {
+  font-size: 16px;
+}
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition:
+    background 0.2s,
+    color 0.2s;
+  line-height: 1.5;
+}
+a {
+  color: var(--primary);
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+input,
+button,
+select {
+  font-family: inherit;
+}
+
+/* ---- View routing ---------------------------------------- */
+.view {
+  display: none;
+}
+.view.active {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---- Buttons --------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--r);
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+}
+.btn-ghost:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  color: var(--text-muted);
+  transition: background 0.15s;
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ---- Card ------------------------------------------------- */
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+
+/* ---- Form ------------------------------------------------- */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.form-group input {
+  padding: 10px 14px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.form-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+/* ============================================================
+   HOME VIEW
+   ============================================================ */
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  font-size: 1.5rem;
+}
+.logo-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.home-main {
+  flex: 1;
+  padding: 48px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.hero {
+  text-align: center;
+}
+.hero h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.hero-sub {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-top: 10px;
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  align-items: start;
+}
+.home-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  padding-top: 60px;
+}
+.home-divider span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+.create-card h2,
+.join-card h2 {
+  font-size: 1.15rem;
+  margin-bottom: 6px;
+}
+.card-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.create-card .btn,
+.join-card .btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.formula-preview {
+  max-width: 900px;
+}
+.formula-preview summary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+.formula-preview summary:hover {
+  color: var(--text);
+}
+.formula-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.formula-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.formula-label {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--primary-light);
+  color: var(--primary);
+  min-width: 44px;
+  text-align: center;
+}
+.formula-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+#view-loading {
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-muted);
+}
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   GAME VIEW
+   ============================================================ */
+#view-game {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+#view-game.active {
+  display: flex;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  gap: 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 56px;
+}
+.game-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.game-header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+.game-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.session-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.story-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.story-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.story-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Participants ----------------------------------------- */
+.participants-section {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.participants-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  min-height: 72px;
+  align-items: flex-end;
+}
+
+/* Participant Card (3D Flip) */
+.participant-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  perspective: 700px;
+}
+.p-card-inner {
+  position: relative;
+  width: 58px;
+  height: 82px;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.p-card-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.p-card-front,
+.p-card-back {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.p-card-front {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+.p-card-front.unvoted {
+  background: var(--surface-2);
+  border: 2px dashed var(--border);
+}
+.p-card-back {
+  transform: rotateY(180deg);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.p-card-back.vote-high {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.p-card-back.vote-med {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #d97706;
+}
+.p-card-back.vote-low {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.p-card-back.vote-ok {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #16a34a;
+}
+[data-theme='dark'] .p-card-back.vote-high {
+  background: #450a0a;
+  border-color: #991b1b;
+  color: #fca5a5;
+}
+[data-theme='dark'] .p-card-back.vote-med {
+  background: #451a03;
+  border-color: #92400e;
+  color: #fcd34d;
+}
+[data-theme='dark'] .p-card-back.vote-low {
+  background: #172554;
+  border-color: #1e40af;
+  color: #93c5fd;
+}
+[data-theme='dark'] .p-card-back.vote-ok {
+  background: #052e16;
+  border-color: #166534;
+  color: #86efac;
+}
+
+/* voted indicator on card front */
+.card-voted-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+
+.p-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 72px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.you-badge {
+  color: var(--primary);
+  font-size: 0.65rem;
+}
+.mod-badge {
+  font-size: 0.75rem;
+}
+
+/* ---- Status Bar ------------------------------------------ */
+.status-bar {
+  padding: 8px 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.status-bar.status-ready {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.status-bar.status-ready .status-text::before {
+  content: '✅ ';
+}
+[data-theme='dark'] .status-bar.status-ready {
+  background: #052e16;
+  color: #86efac;
+}
+
+/* ---- Tabs ------------------------------------------------- */
+.game-main {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.voting-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ---- Vote Cards ------------------------------------------ */
+.vote-cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 18px 20px 32px;
+  align-content: flex-start;
+}
+.vote-card {
+  width: 58px;
+  height: 84px;
+  border-radius: var(--r);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+  position: relative;
+}
+.vote-card:hover:not(:disabled) {
+  transform: translateY(-6px);
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25);
+}
+.vote-card.suggested-preview:not(:disabled):not(.selected) {
+  transform: translateY(-6px);
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25);
+}
+.vote-card.suggested-preview:not(:disabled):not(.selected)::after {
+  content: 'vote?';
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.vote-card.selected {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+}
+.vote-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---- Calculator ------------------------------------------ */
+.calculator {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  flex: 1;
+  padding: 14px 16px;
+  gap: 12px;
+}
+.calc-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.calc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.calc-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.calc-hint {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.scale-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(40px, 1fr));
+  gap: 8px;
+}
+.scale-btn {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-muted);
+  padding: 10px 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s,
+    transform 0.12s;
+}
+.scale-btn:hover {
+  border-color: var(--primary);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+.scale-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+.scale-btn.is-selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.calc-output {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.factor-breakdown {
+  order: 1;
+}
+.calc-result-grid {
+  order: 2;
+}
+.calc-output .btn {
+  order: 3;
+}
+.calc-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.calc-result-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  text-align: center;
+}
+.calc-result-item.highlight {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.result-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.result-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.formula-value {
+  font-family: monospace;
+  font-size: 1rem;
+}
+.sp-big {
+  font-size: 2rem;
+  color: var(--primary);
+}
+.result-range {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.calc-output .btn {
+  align-self: center;
+  min-width: 220px;
+  margin-top: 8px;
+}
+
+.factor-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.factor-chip {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  text-align: center;
+}
+.factor-name {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.factor-math {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.fibonacci-section {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.fibonacci-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 0 20px;
+}
+
+/* ---- Results --------------------------------------------- */
+.results-area {
+  background: var(--surface);
+  border-top: 1.5px solid var(--border);
+  padding: 20px;
+  flex-shrink: 0;
+}
+.results-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.results-votes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.result-vote-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 30px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  font-size: 0.875rem;
+}
+.result-vote-chip .rv-name {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.result-vote-chip .rv-val {
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--text);
+}
+.results-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.stat-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.stat-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ---- Footer ---------------------------------------------- */
+.game-footer {
+  background: var(--surface);
+  border-top: 1.5px solid var(--border);
+  padding: 12px 20px;
+  flex-shrink: 0;
+}
+.footer-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.vote-count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.muted-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---- Modal ----------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay[hidden] {
+  display: none;
+}
+.modal-box {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 440px;
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.modal-box h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.modal-input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+}
+.modal-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ---- Toast ----------------------------------------------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  z-index: 200;
+  background: #1e293b;
+  color: #e2e8f0;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast[hidden] {
+  display: none;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.toast-success {
+  background: #065f46;
+  color: #a7f3d0;
+}
+.toast.toast-error {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+.toast.toast-info {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+/* ---- Demo mode badge ------------------------------------- */
+.demo-mode-badge {
+  position: fixed;
+  top: 66px;
+  right: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #451a03;
+  color: #fcd34d;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #92400e;
+  z-index: 50;
+  cursor: help;
+  box-shadow: var(--shadow);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1180px) {
+  .calculator {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 680px) {
+  .home-cards {
+    grid-template-columns: 1fr;
+  }
+  .home-divider {
+    padding: 8px 0;
+    flex-direction: row;
+  }
+  .home-divider span {
+    width: 100%;
+    text-align: center;
+  }
+  .calc-result-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .factor-breakdown {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+  .session-title {
+    max-width: 100px;
+  }
+  .story-value {
+    max-width: 160px;
+  }
+  .game-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .game-header-center {
+    order: 3;
+    width: 100%;
+  }
+  .scale-buttons {
+    grid-template-columns: repeat(5, minmax(34px, 1fr));
+    gap: 6px;
+  }
+  .scale-btn {
+    padding: 9px 4px;
+    font-size: 0.86rem;
+  }
+}

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AVB Planning Poker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ======================================================
+       HOME VIEW
+       ====================================================== -->
+    <div id="view-home" class="view active">
+      <header class="home-header">
+        <div class="logo">
+          <span class="logo-icon">🃏</span>
+          <span class="logo-text">AVB Planning Poker</span>
+        </div>
+        <button id="btn-toggle-theme" class="icon-btn" title="Toggle theme">🌙</button>
+      </header>
+
+      <main class="home-main">
+        <div class="hero">
+          <h1>AVB Planning Poker</h1>
+          <p class="hero-sub">
+            Research-backed 6-dimension story point estimation — complexity stays honest even when AI writes the code.
+          </p>
+        </div>
+
+        <div class="home-cards">
+          <!-- Create -->
+          <div class="card create-card">
+            <h2>Create Session</h2>
+            <p class="card-desc">Start a new planning session and share the link with your team.</p>
+            <div class="form-group">
+              <label for="session-name-input">Session Name</label>
+              <input
+                type="text"
+                id="session-name-input"
+                placeholder="Sprint 42 Planning"
+                maxlength="50"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-group">
+              <label for="create-name-input">Your Name</label>
+              <input
+                type="text"
+                id="create-name-input"
+                placeholder="Your name"
+                maxlength="30"
+                autocomplete="given-name"
+              />
+            </div>
+            <button id="btn-create" class="btn btn-primary">Create Session →</button>
+          </div>
+
+          <div class="home-divider"><span>or</span></div>
+
+          <!-- Join -->
+          <div class="card join-card">
+            <h2>Join Session</h2>
+            <p class="card-desc">Enter a session ID from someone who created a session.</p>
+            <div class="form-group">
+              <label for="join-id-input">Session ID</label>
+              <input
+                type="text"
+                id="join-id-input"
+                placeholder="e.g. A3B7XQ9R"
+                maxlength="12"
+                autocomplete="off"
+                style="text-transform: uppercase"
+              />
+            </div>
+            <div class="form-group">
+              <label for="join-name-input">Your Name</label>
+              <input
+                type="text"
+                id="join-name-input"
+                placeholder="Your name"
+                maxlength="30"
+                autocomplete="given-name"
+              />
+            </div>
+            <button id="btn-join" class="btn btn-secondary">Join Session →</button>
+          </div>
+        </div>
+
+        <!-- Formula Preview -->
+        <details class="formula-preview card">
+          <summary>How the Story Point Calculator Works</summary>
+          <div class="formula-grid">
+            <div class="formula-item">
+              <span class="formula-label">A. Score</span>
+              <span class="formula-desc"
+                >Raw Score = Size of Effort x Complexity Multiplier x Uncertainty Multiplier x Cognitive Multiplier x
+                Dependency Multiplier x Risk Multiplier, then rounded to a whole number &nbsp;(rounded range 1-12)</span
+              >
+            </div>
+            <div class="formula-item">
+              <span class="formula-label">B. Basis</span>
+              <span class="formula-desc"
+                >Size is the base. For every other factor: score 1→x1, 2→x1.05, 3→x1.1, 4→x1.15, 5→x1.2. Example: 5 x
+                1.05 x 1.05 x 1.05 x 1.05 x 1.05 = 6.38, rounded to 6.</span
+              >
+            </div>
+            <div class="formula-item">
+              <span class="formula-label">C. SP</span>
+              <span class="formula-desc"
+                >Suggested SP is the nearest Fibonacci card to the rounded score: 1, 2, 3, 5, 8, 13.</span
+              >
+            </div>
+          </div>
+        </details>
+      </main>
+    </div>
+
+    <!-- ======================================================
+       LOADING VIEW
+       ====================================================== -->
+    <div id="view-loading" class="view">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <p>Joining session…</p>
+      </div>
+    </div>
+
+    <!-- ======================================================
+       GAME VIEW
+       ====================================================== -->
+    <div id="view-game" class="view">
+      <!-- Game Header -->
+      <header class="game-header">
+        <div class="game-header-left">
+          <button id="btn-leave" class="btn btn-ghost btn-sm">← Leave</button>
+          <span id="game-session-name" class="session-title">Session</span>
+        </div>
+        <div class="game-header-center">
+          <div class="story-bar">
+            <span class="story-label">Story:</span>
+            <span id="game-story-display" class="story-value">—</span>
+            <button id="btn-edit-story" class="icon-btn mod-only" title="Edit story name" style="display: none">
+              ✏️
+            </button>
+          </div>
+        </div>
+        <div class="game-header-right">
+          <button id="btn-copy-link" class="btn btn-ghost btn-sm">📋 Invite</button>
+          <button id="btn-toggle-theme-game" class="icon-btn" title="Toggle theme">🌙</button>
+        </div>
+      </header>
+
+      <!-- Participants -->
+      <div class="participants-section">
+        <div id="participants-grid" class="participants-grid"></div>
+      </div>
+
+      <!-- Status Bar -->
+      <div id="status-bar" class="status-bar">
+        <span id="status-text">Waiting for votes…</span>
+      </div>
+
+      <!-- Voting Area -->
+      <main id="voting-area" class="game-main">
+        <div class="calculator">
+          <div class="calc-inputs">
+            <div class="calc-row">
+              <div class="calc-field">
+                <label>Size of Effort<span class="calc-hint">1=Small tweak · 5=Large cross-cutting effort</span></label>
+                <div class="scale-buttons" data-metric="size" role="radiogroup" aria-label="Size of Effort">
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
+                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
+                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                </div>
+              </div>
+              <div class="calc-field">
+                <label
+                  >Technical Complexity<span class="calc-hint"
+                    >1=Simple CRUD · 5=High architectural complexity</span
+                  ></label
+                >
+                <div class="scale-buttons" data-metric="complexity" role="radiogroup" aria-label="Technical Complexity">
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
+                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
+                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="calc-row">
+              <div class="calc-field">
+                <label
+                  >Uncertainty / Ambiguity<span class="calc-hint">1=Clear criteria · 5=Highly ambiguous</span></label
+                >
+                <div
+                  class="scale-buttons"
+                  data-metric="uncertainty"
+                  role="radiogroup"
+                  aria-label="Uncertainty or Ambiguity"
+                >
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
+                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
+                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                </div>
+              </div>
+              <div class="calc-field">
+                <label
+                  >Cognitive Load<span class="calc-hint">1=Straightforward · 5=Complex multi-domain logic</span></label
+                >
+                <div class="scale-buttons" data-metric="cognitive" role="radiogroup" aria-label="Cognitive Load">
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
+                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
+                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="calc-row">
+              <div class="calc-field">
+                <label
+                  >Integration / Dependencies<span class="calc-hint"
+                    >1=No external systems · 5=Heavy cross-system impact</span
+                  ></label
+                >
+                <div
+                  class="scale-buttons"
+                  data-metric="deps"
+                  role="radiogroup"
+                  aria-label="Integration and Dependencies"
+                >
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
+                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
+                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                </div>
+              </div>
+              <div class="calc-field">
+                <label
+                  >Risk / Failure Impact<span class="calc-hint"
+                    >1=Low consequence · 5=Outage/data/legal exposure</span
+                  ></label
+                >
+                <div class="scale-buttons" data-metric="risk" role="radiogroup" aria-label="Risk and Failure Impact">
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
+                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
+                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="calc-output">
+            <div class="calc-result-grid">
+              <div class="calc-result-item">
+                <span class="result-label">Rounded Score</span>
+                <span class="result-value" id="out-bes">1</span>
+                <span class="result-range">Range 1-12</span>
+              </div>
+              <div class="calc-result-item">
+                <span class="result-label">Multiplication Formula</span>
+                <code class="result-value formula-value" id="out-formula">1 x 1 x 1 x 1 x 1 x 1</code>
+                <span class="result-range" id="out-formula-total">= 1 raw -> 1 rounded</span>
+              </div>
+              <div class="calc-result-item highlight">
+                <span class="result-label">Suggested SP</span>
+                <span class="result-value sp-big" id="out-sp">1</span>
+                <span class="result-range" id="out-sp-basis">Rounded score 1 maps to 1 SP</span>
+              </div>
+            </div>
+            <div class="factor-breakdown" aria-label="Multiplicative factor inputs">
+              <div class="factor-chip">
+                <span class="factor-name">Size</span>
+                <span class="factor-math" id="out-factor-size">1 (base)</span>
+              </div>
+              <div class="factor-chip">
+                <span class="factor-name">Complexity</span>
+                <span class="factor-math" id="out-factor-complexity">1 => x1</span>
+              </div>
+              <div class="factor-chip">
+                <span class="factor-name">Uncertainty</span>
+                <span class="factor-math" id="out-factor-uncertainty">1 => x1</span>
+              </div>
+              <div class="factor-chip">
+                <span class="factor-name">Cognitive Load</span>
+                <span class="factor-math" id="out-factor-cognitive">1 => x1</span>
+              </div>
+              <div class="factor-chip">
+                <span class="factor-name">Dependencies</span>
+                <span class="factor-math" id="out-factor-deps">1 => x1</span>
+              </div>
+              <div class="factor-chip">
+                <span class="factor-name">Risk</span>
+                <span class="factor-math" id="out-factor-risk">1 => x1</span>
+              </div>
+            </div>
+            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote Suggested SP (1)</button>
+          </div>
+        </div>
+
+        <section class="fibonacci-section" aria-labelledby="fibonacci-heading">
+          <h3 id="fibonacci-heading" class="fibonacci-heading">Fibonacci Cards</h3>
+          <div id="vote-cards" class="vote-cards-grid"></div>
+        </section>
+      </main>
+
+      <!-- Results Area -->
+      <div id="results-area" class="results-area" hidden>
+        <h2 class="results-title">Results</h2>
+        <div id="results-votes" class="results-votes"></div>
+        <div class="results-stats">
+          <div class="stat-item">
+            <span class="stat-label">Average</span>
+            <span class="stat-value" id="results-avg">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Consensus</span>
+            <span class="stat-value" id="results-consensus">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Nearest SP</span>
+            <span class="stat-value" id="results-nearest">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Controls -->
+      <footer class="game-footer">
+        <div id="footer-voting" class="footer-section">
+          <span id="vote-count-label" class="vote-count">0 / 0 voted</span>
+          <button id="btn-reveal" class="btn btn-primary mod-only" hidden>Reveal Votes</button>
+          <span id="waiting-label" class="muted-text participant-only">Waiting for moderator to reveal…</span>
+        </div>
+        <div id="footer-revealed" class="footer-section" hidden>
+          <button id="btn-new-round" class="btn btn-secondary mod-only" style="display: none">New Round</button>
+          <span class="muted-text participant-only">Waiting for moderator to start next round…</span>
+        </div>
+      </footer>
+    </div>
+    <!-- /view-game -->
+
+    <!-- ======================================================
+       STORY EDIT MODAL
+       ====================================================== -->
+    <div id="modal-story" class="modal-overlay" hidden>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-story-title">
+        <h3 id="modal-story-title">Edit Story Name</h3>
+        <input
+          type="text"
+          id="story-input"
+          class="modal-input"
+          placeholder="e.g. LD-1186 Add user authentication"
+          maxlength="80"
+        />
+        <div class="modal-buttons">
+          <button id="btn-story-cancel" class="btn btn-ghost">Cancel</button>
+          <button id="btn-story-save" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+       TOAST
+       ====================================================== -->
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <!-- Ably Realtime (no build step required) -->
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <script src="ably-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

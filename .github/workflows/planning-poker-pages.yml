@@ -45,10 +45,7 @@ jobs:
           # Inject Ably key from GitHub secret as a hidden window variable.
           # This keeps the key out of version control and prevents exposure in deployed files.
           # If secret is empty, app auto-falls back to demo mode.
-          ABLY_KEY_INJECTION=""
-          if [ -n "${ABLY_API_KEY}" ]; then
-            ABLY_KEY_INJECTION="<script>window.__ABLY_API_KEY__='${ABLY_API_KEY}';</script>"
-          fi
+          ABLY_KEY_INJECTION="$(node -e "const key = process.env.ABLY_API_KEY || ''; if (key) process.stdout.write('<script>window.__ABLY_API_KEY__=' + JSON.stringify(key) + ';</script>');")"
 
           # Insert the injection script right before </head> in index.html
           sed "s|</head>|${ABLY_KEY_INJECTION}</head>|" index.html > dist/index.html

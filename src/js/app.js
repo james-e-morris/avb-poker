@@ -74,6 +74,12 @@ const state = {
 let ablyRealtime = null;
 let ablyChannel = null;
 
+function getMaskedAblyKey(key) {
+  if (!key) return '(missing)';
+  if (key.length <= 8) return '(present)';
+  return `${key.slice(0, 4)}...${key.slice(-4)}`;
+}
+
 function tryInitAbly() {
   try {
     if (typeof Ably === 'undefined') return false;
@@ -1121,9 +1127,17 @@ async function router() {
 // ---- Boot --------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.info(
+    '[Planning Poker] Ably key injection:',
+    window.__ABLY_API_KEY__ ? 'present' : 'missing',
+    '| config key:',
+    getMaskedAblyKey((ABLY_CONFIG && ABLY_CONFIG.apiKey) || '')
+  );
+
   // Realtime mode priority: Ably -> Demo
   const ablyOk = tryInitAbly();
   state.dbMode = ablyOk ? 'ably' : 'demo';
+  console.info('[Planning Poker] Runtime mode:', state.dbMode);
   if (state.dbMode === 'demo') initDemoMode();
 
   // Theme

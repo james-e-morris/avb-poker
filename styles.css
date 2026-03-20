@@ -1067,6 +1067,8 @@ select {
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+
+/* ---- Large Desktop (> 1180px) ---- */
 @media (max-width: 1180px) {
   .calculator {
     grid-template-columns: 1fr;
@@ -1074,6 +1076,96 @@ select {
   }
 }
 
+/* ---- Tablet/Large Mobile (900px - 1180px) ---- */
+@media (max-width: 900px) {
+  .home-main {
+    padding: 32px 16px;
+    gap: 24px;
+  }
+  .vote-cards-grid {
+    padding: 16px 16px 24px;
+    gap: 8px;
+  }
+  .vote-card {
+    width: 54px;
+    height: 80px;
+    font-size: 1.1rem;
+  }
+  .participants-grid {
+    gap: 12px;
+    min-height: 68px;
+  }
+  .participant-card {
+    gap: 6px;
+  }
+  .p-card-inner {
+    width: 52px;
+    height: 76px;
+  }
+  .p-name {
+    max-width: 64px;
+    font-size: 0.68rem;
+  }
+  .game-header {
+    padding: 8px 16px;
+    min-height: 52px;
+  }
+  .session-title {
+    max-width: 120px;
+    font-size: 0.9rem;
+  }
+  .story-value {
+    max-width: 200px;
+    font-size: 0.9rem;
+  }
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+  .btn-sm {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+  .scale-buttons {
+    grid-template-columns: repeat(5, minmax(36px, 1fr));
+    gap: 6px;
+  }
+  .scale-btn {
+    padding: 8px 4px;
+    font-size: 0.84rem;
+  }
+  .calc-result-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .calc-result-item {
+    padding: 10px 6px;
+  }
+  .result-value {
+    font-size: 1.2rem;
+  }
+  .sp-big {
+    font-size: 1.8rem;
+  }
+  .result-label {
+    font-size: 0.68rem;
+  }
+  .factor-breakdown {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .factor-chip {
+    padding: 8px 8px;
+  }
+  .factor-name {
+    font-size: 0.65rem;
+  }
+  .calc-output .btn {
+    min-width: 180px;
+  }
+}
+
+/* ---- Medium Mobile (680px - 900px) ---- */
 @media (max-width: 680px) {
   .home-cards {
     grid-template-columns: 1fr;
@@ -1086,35 +1178,510 @@ select {
     width: 100%;
     text-align: center;
   }
-  .calc-result-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .factor-breakdown {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .hero h1 {
     font-size: 1.5rem;
   }
-  .session-title {
-    max-width: 100px;
+  .hero-sub {
+    font-size: 0.9rem;
   }
-  .story-value {
-    max-width: 160px;
+  .home-main {
+    padding: 24px 14px;
+    gap: 20px;
   }
   .game-header {
     flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    min-height: auto;
+  }
+  .game-header-left {
     gap: 8px;
   }
   .game-header-center {
     order: 3;
     width: 100%;
+    padding-top: 6px;
   }
-  .scale-buttons {
-    grid-template-columns: repeat(5, minmax(34px, 1fr));
+  .game-header-right {
     gap: 6px;
   }
+  .session-title {
+    max-width: 80px;
+    font-size: 0.85rem;
+  }
+  .story-label {
+    font-size: 0.7rem;
+  }
+  .story-value {
+    max-width: 140px;
+    font-size: 0.85rem;
+  }
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  .btn-sm {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+  .icon-btn {
+    font-size: 0.95rem;
+    padding: 4px 6px;
+  }
+  .participants-grid {
+    gap: 10px;
+    min-height: 64px;
+    padding: 8px 0;
+  }
+  .participant-card {
+    gap: 4px;
+  }
+  .p-card-inner {
+    width: 48px;
+    height: 72px;
+  }
+  .p-card-front,
+  .p-card-back {
+    border-radius: 6px;
+  }
+  .p-name {
+    max-width: 56px;
+    font-size: 0.65rem;
+  }
+  .participant-card .you-badge {
+    font-size: 0.6rem;
+  }
+  .vote-cards-grid {
+    padding: 14px 12px 20px;
+    gap: 6px;
+  }
+  .vote-card {
+    width: 50px;
+    height: 76px;
+    font-size: 1rem;
+    border-radius: 6px;
+  }
+  .vote-card:hover:not(:disabled) {
+    transform: translateY(-4px);
+  }
+  .vote-card.selected {
+    transform: translateY(-6px);
+  }
+  .scale-buttons {
+    grid-template-columns: repeat(5, minmax(32px, 1fr));
+    gap: 5px;
+  }
   .scale-btn {
-    padding: 9px 4px;
-    font-size: 0.86rem;
+    padding: 7px 3px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+  .calculator {
+    padding: 12px 12px;
+    gap: 10px;
+  }
+  .calc-inputs {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+  .calc-row {
+    gap: 10px;
+  }
+  .calc-field {
+    gap: 4px;
+  }
+  .calc-field label {
+    font-size: 0.75rem;
+  }
+  .calc-hint {
+    font-size: 0.7rem;
+  }
+  .calc-output {
+    padding: 12px;
+    gap: 12px;
+  }
+  .calc-result-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .calc-result-item {
+    padding: 8px 6px;
+    border-radius: 6px;
+  }
+  .result-label {
+    font-size: 0.64rem;
+  }
+  .result-value {
+    font-size: 1.1rem;
+  }
+  .sp-big {
+    font-size: 1.6rem;
+  }
+  .result-range {
+    font-size: 0.62rem;
+  }
+  .factor-breakdown {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .factor-chip {
+    padding: 7px 6px;
+    border-radius: 6px;
+  }
+  .factor-name {
+    font-size: 0.6rem;
+  }
+  .factor-math {
+    font-size: 0.82rem;
+  }
+  .calc-output .btn {
+    min-width: 150px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+  }
+  .fibonacci-heading {
+    font-size: 0.8rem;
+    margin: 0 10px;
+  }
+  .results-area {
+    padding: 14px;
+  }
+  .results-title {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+  }
+  .results-votes {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .result-vote-chip {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  .results-stats {
+    gap: 16px;
+    padding-top: 10px;
+  }
+  .stat-label {
+    font-size: 0.72rem;
+  }
+  .stat-value {
+    font-size: 0.95rem;
+  }
+  .game-footer {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .footer-section {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .vote-count {
+    font-size: 0.8rem;
+  }
+  .muted-text {
+    font-size: 0.78rem;
+  }
+  #btn-reveal,
+  #btn-new-round {
+    width: auto;
+    min-width: 110px;
+  }
+  .modal-box {
+    padding: 20px;
+  }
+  .modal-box h3 {
+    font-size: 0.95rem;
+  }
+  .card {
+    padding: 20px;
+  }
+  .create-card h2,
+  .join-card h2 {
+    font-size: 1.05rem;
+  }
+  .card-desc {
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+}
+
+/* ---- Small Mobile (480px - 680px) ---- */
+@media (max-width: 480px) {
+  html {
+    font-size: 15px;
+  }
+  .home-main {
+    padding: 16px 8px;
+    gap: 16px;
+  }
+  .hero h1 {
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+  }
+  .hero-sub {
+    font-size: 0.85rem;
+    max-width: 100%;
+  }
+  .card {
+    padding: 16px;
+    border-radius: 8px;
+  }
+  .game-header {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+  .btn-sm {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+  }
+  .icon-btn {
+    font-size: 0.9rem;
+    padding: 3px 5px;
+  }
+  .session-title {
+    max-width: 60px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .story-label {
+    font-size: 0.65rem;
+  }
+  .story-value {
+    max-width: 100px;
+    font-size: 0.75rem;
+  }
+  .participants-grid {
+    gap: 8px;
+    min-height: 60px;
+  }
+  .p-card-inner {
+    width: 44px;
+    height: 66px;
+  }
+  .p-name {
+    max-width: 50px;
+    font-size: 0.6rem;
+  }
+  .vote-cards-grid {
+    padding: 10px 8px 16px;
+    gap: 5px;
+  }
+  .vote-card {
+    width: 46px;
+    height: 70px;
+    font-size: 0.9rem;
+  }
+  .vote-card:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+  .vote-card.selected {
+    transform: translateY(-4px);
+  }
+  .scale-buttons {
+    grid-template-columns: repeat(5, minmax(28px, 1fr));
+    gap: 4px;
+  }
+  .scale-btn {
+    padding: 6px 2px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+  }
+  .calculator {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+  .calc-inputs,
+  .calc-output {
+    padding: 10px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+  .calc-row {
+    gap: 8px;
+  }
+  .calc-field label {
+    font-size: 0.7rem;
+  }
+  .calc-hint {
+    font-size: 0.65rem;
+  }
+  .calc-result-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .calc-result-item {
+    padding: 6px 4px;
+  }
+  .result-label {
+    font-size: 0.6rem;
+  }
+  .result-value {
+    font-size: 1rem;
+  }
+  .sp-big {
+    font-size: 1.4rem;
+  }
+  .result-range {
+    font-size: 0.58rem;
+  }
+  .factor-breakdown {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+  .factor-chip {
+    padding: 5px 4px;
+  }
+  .factor-name {
+    font-size: 0.55rem;
+  }
+  .factor-math {
+    font-size: 0.75rem;
+  }
+  .calc-output .btn {
+    min-width: 120px;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+  }
+  .formula-value {
+    font-size: 0.9rem;
+  }
+  .results-area {
+    padding: 10px 8px;
+  }
+  .results-title {
+    font-size: 0.85rem;
+  }
+  .results-votes {
+    gap: 6px;
+  }
+  .result-vote-chip {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  .results-stats {
+    gap: 12px;
+  }
+  .game-footer {
+    padding: 8px 8px;
+    gap: 6px;
+  }
+  .footer-section {
+    gap: 8px;
+  }
+  .vote-count {
+    font-size: 0.75rem;
+  }
+  .muted-text {
+    font-size: 0.75rem;
+  }
+  .home-divider span {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+  .modal-box {
+    padding: 16px;
+    max-width: calc(100vw - 32px);
+  }
+  .modal-box h3 {
+    font-size: 0.9rem;
+  }
+}
+
+/* ---- Extra Small Mobile (< 480px) ---- */
+@media (max-width: 380px) {
+  html {
+    font-size: 14px;
+  }
+  .home-main {
+    padding: 12px 6px;
+  }
+  .hero h1 {
+    font-size: 1.1rem;
+  }
+  .hero-sub {
+    font-size: 0.8rem;
+  }
+  .card {
+    padding: 14px;
+  }
+  .game-header {
+    padding: 4px 6px;
+  }
+  .status-bar {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+  .vote-card {
+    width: 42px;
+    height: 64px;
+    font-size: 0.85rem;
+  }
+  .participants-grid {
+    gap: 6px;
+  }
+  .p-card-inner {
+    width: 40px;
+    height: 60px;
+  }
+  .p-name {
+    max-width: 40px;
+    font-size: 0.55rem;
+  }
+  .scale-buttons {
+    grid-template-columns: repeat(5, minmax(24px, 1fr));
+    gap: 3px;
+  }
+  .scale-btn {
+    padding: 5px 1px;
+    font-size: 0.7rem;
+  }
+}
+
+/* ---- Landscape Orientation Adjustments ---- */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-header {
+    padding: 6px 12px;
+    min-height: 44px;
+  }
+  .participants-section {
+    padding: 6px 12px;
+  }
+  .participants-grid {
+    min-height: 56px;
+    gap: 8px;
+  }
+  .p-card-inner {
+    width: 44px;
+    height: 62px;
+  }
+  .status-bar {
+    padding: 4px 12px;
+    font-size: 0.76rem;
+  }
+  .game-main {
+    padding: 0;
+  }
+  .calculator {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .vote-cards-grid {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .vote-card {
+    width: 44px;
+    height: 64px;
+  }
+  .game-footer {
+    padding: 6px 12px;
+    gap: 6px;
   }
 }

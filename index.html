@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://realtime.ably.io wss://realtime.ably.io; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline';"
+    />
     <title>AVB Planning Poker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -370,6 +374,20 @@
         <div class="modal-buttons">
           <button id="btn-story-cancel" class="btn btn-ghost">Cancel</button>
           <button id="btn-story-save" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+       NEW ROUND MODAL
+       ====================================================== -->
+    <div id="modal-round" class="modal-overlay" hidden>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-round-title">
+        <h3 id="modal-round-title">Start New Round</h3>
+        <input type="text" id="round-input" class="modal-input" placeholder="Enter round name" maxlength="80" />
+        <div class="modal-buttons">
+          <button id="btn-round-cancel" class="btn btn-ghost">Cancel</button>
+          <button id="btn-round-start" class="btn btn-primary">Start Round</button>
         </div>
       </div>
     </div>

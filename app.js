@@ -912,6 +912,10 @@ function setupEventListeners() {
       showToast('Please enter a session ID', 'error');
       return;
     }
+    if (rawId.length < 4 || rawId.length > 12) {
+      showToast('Session ID must be 4-12 characters', 'error');
+      return;
+    }
     if (!userName) {
       showToast('Please enter your name', 'error');
       document.getElementById('join-name-input').focus();
@@ -1011,20 +1015,40 @@ function setupEventListeners() {
 
   // ---- Reveal / New Round ----
   document.getElementById('btn-reveal').addEventListener('click', revealVotes);
-  document.getElementById('btn-new-round').addEventListener('click', async () => {
-    const roundName = window.prompt('Enter round name', '');
-    if (roundName === null) return;
+  document.getElementById('btn-new-round').addEventListener('click', () => {
+    document.getElementById('round-input').value = '';
+    document.getElementById('modal-round').removeAttribute('hidden');
+    document.getElementById('round-input').focus();
+  });
 
-    const trimmed = roundName.trim();
-    if (!trimmed) {
+  document.getElementById('btn-round-cancel').addEventListener('click', () => {
+    document.getElementById('modal-round').setAttribute('hidden', '');
+  });
+
+  document.getElementById('btn-round-start').addEventListener('click', async () => {
+    const roundName = document.getElementById('round-input').value.trim();
+    if (!roundName) {
       showToast('Round name is required', 'error');
       return;
     }
 
-    await newRound(trimmed);
+    await newRound(roundName);
+    document.getElementById('modal-round').setAttribute('hidden', '');
     // Reset immediately for the moderator — don't wait for poller tick
     resetCalculatorSelectionsToDefault();
     updateCalcOutput();
+  });
+
+  document.getElementById('round-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btn-round-start').click();
+    if (e.key === 'Escape') document.getElementById('btn-round-cancel').click();
+  });
+
+  // Close modal on backdrop click
+  document.getElementById('modal-round').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modal-round')) {
+      document.getElementById('modal-round').setAttribute('hidden', '');
+    }
   });
 
   // ---- Theme ----

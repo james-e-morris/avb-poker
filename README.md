@@ -24,6 +24,20 @@ This app is a static site, so it deploys cleanly to GitHub Pages.
 - Pushes to `prod`/`main` that touch app files or the workflow trigger deploy.
 - You can also run the workflow manually via **Actions > Deploy Planning Poker to GitHub Pages**.
 
+## Ably troubleshooting
+
+If join/create fails with Ably error `40160 action not permitted`, the key exists but lacks required capabilities for this app.
+
+Required key capabilities for channel prefix `avb-poker`:
+
+- `publish`
+- `subscribe`
+- `history`
+
+Scope recommendation:
+
+- `avb-poker:*` with the capabilities above
+
 ## Security note
 
 Using an Ably API key directly in browser code is acceptable for quick demos but exposes credentials to clients. For production, move to token auth via a small backend auth endpoint.

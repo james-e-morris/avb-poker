@@ -100,19 +100,38 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function getAblyErrorCode(err) {
+  return Number(err?.code || err?.response?.error?.code || err?.statusCode || 0);
+}
+
+function toAblyActionError(err, action) {
+  const code = getAblyErrorCode(err);
+  const message = err?.message || err?.response?.error?.message || 'Unknown Ably error';
+  const prefix = (ABLY_CONFIG && ABLY_CONFIG.channelPrefix) || 'avb-poker';
+
+  if (code === 40160) {
+    return new Error(
+      `Ably key permission error (${code}) while ${action}. Add publish, subscribe, and history capabilities for "${prefix}:*" in your Ably app key.`
+    );
+  }
+
+  return new Error(`Ably error${code ? ` (${code})` : ''} while ${action}: ${message}`);
+}
+
 function ablyPublishState(channel, session) {
   return new Promise((resolve, reject) => {
     channel.publish('session_state', session, (err) => {
-      if (err) return reject(err);
+      if (err) return reject(toAblyActionError(err, 'publishing session state'));
       return resolve();
     });
   });
 }
 
 function ablyGetLatestState(channel) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     channel.history({ limit: 50 }, (err, page) => {
-      if (err || !page || !page.items) return resolve(null);
+      if (err) return reject(toAblyActionError(err, 'reading room history'));
+      if (!page || !page.items) return resolve(null);
       const snapshot = page.items.find((item) => item.name === 'session_state');
       return resolve(snapshot ? snapshot.data : null);
     });
@@ -403,18 +422,23 @@ function subscribeToSession(sessionId) {
       ablyChannel = null;
     };
 
-    ablyGetLatestState(ablyChannel).then((latest) => {
-      if (latest) {
-        if (!isRoomExpired(latest)) handleSessionData(latest);
-      } else if (state.isModerator && state.pendingSession) {
-        const initial = deepClone(state.pendingSession);
-        state.pendingSession = null;
-        ablyPublishState(ablyChannel, initial).catch((err) => {
-          console.error('[Planning Poker] Failed to publish initial Ably state:', err);
-          showToast('Could not initialize room state', 'error');
-        });
-      }
-    });
+    ablyGetLatestState(ablyChannel)
+      .then((latest) => {
+        if (latest) {
+          if (!isRoomExpired(latest)) handleSessionData(latest);
+        } else if (state.isModerator && state.pendingSession) {
+          const initial = deepClone(state.pendingSession);
+          state.pendingSession = null;
+          ablyPublishState(ablyChannel, initial).catch((err) => {
+            console.error('[Planning Poker] Failed to publish initial Ably state:', err);
+            showToast(err.message || 'Could not initialize room state', 'error', 7000);
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('[Planning Poker] Failed to read Ably room history:', err);
+        showToast(err.message || 'Could not read room state from Ably', 'error', 7000);
+      });
   } else {
     startDemoPoller(sessionId);
     const s = getDemoSession(sessionId);
@@ -682,7 +706,7 @@ function renderVoteCards(selectedVote) {
     const showSuggestedPreview = !isRevealed && !isSelected && suggestedVote === val;
     const btn = el(
       'button',
-      `vote-card${isSelected ? ' selected' : ''}${showSuggestedPreview ? ' suggested-preview' : ''}`,
+      `vote-card${isSelected ? ' selected' : ''}${showSuggestedPreview ? ' suggested-preview' : ''}`
     );
     btn.textContent = val;
     btn.disabled = !!isRevealed;
@@ -802,7 +826,7 @@ async function enterGame(sessionId) {
       showToast(
         'Demo mode — works across tabs on same browser. Configure ably-config.js for cross-location realtime.',
         'info',
-        5000,
+        5000
       );
     } else if (state.dbMode === 'ably') {
       showToast('Realtime mode via Ably — session state is ephemeral.', 'info', 4500);
@@ -906,12 +930,12 @@ function setupEventListeners() {
   ['session-name-input', 'create-name-input'].forEach((id) =>
     document.getElementById(id).addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-create').click();
-    }),
+    })
   );
   ['join-id-input', 'join-name-input'].forEach((id) =>
     document.getElementById(id).addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-join').click();
-    }),
+    })
   );
 
   // Auto-uppercase session ID

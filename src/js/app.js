@@ -221,7 +221,7 @@ function getUserId() {
 }
 
 function generateSessionId() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   let id = '';
   const arr = crypto.getRandomValues(new Uint8Array(8));
   arr.forEach((b) => {

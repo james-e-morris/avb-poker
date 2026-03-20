@@ -5,7 +5,7 @@ This app is a static site, so it deploys cleanly to GitHub Pages.
 ## What is already set up
 
 - GitHub Actions workflow: `.github/workflows/planning-poker-pages.yml`
-- Deploy source: repository root static files (`index.html`, `app.js`, `styles.css`)
+- Deploy source: `index.html` from root plus assets from `src/js/` and `src/css/`
 - Output: GitHub Pages site artifact
 - Ably key injection at deploy-time from repo secret `ABLY_API_KEY`
 

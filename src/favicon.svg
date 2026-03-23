@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AVB Planning Poker card favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#09326C" />
+      <stop offset="100%" stop-color="#0052CC" />
+    </linearGradient>
+    <linearGradient id="jiraMark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#85B8FF" />
+      <stop offset="100%" stop-color="#0C66E4" />
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+
+  <!-- Back card -->
+  <rect x="12" y="11" width="34" height="42" rx="6" transform="rotate(-8 29 32)" fill="#1D7AFC" opacity="0.55" />
+
+  <!-- Front poker card -->
+  <rect x="17" y="9" width="34" height="46" rx="6" fill="#FFFFFF" stroke="#DEEBFF" stroke-width="1.5" />
+
+  <!-- Card corners: number + pip style -->
+  <text x="21.5" y="17" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="800" fill="#0052CC">8</text>
+  <circle cx="23" cy="20.5" r="1.6" fill="#0052CC" />
+
+  <g transform="translate(47 47) rotate(180)">
+    <text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="800" fill="#0052CC">8</text>
+    <circle cx="1.5" cy="3.5" r="1.6" fill="#0052CC" />
+  </g>
+
+  <!-- Jira-inspired symbol centered like a face card mark -->
+  <g transform="translate(0 1)">
+    <path d="M26 26h12l-4.2 4.2H21.8z" fill="url(#jiraMark)" />
+    <path d="M30.2 30.2H42l-4.2 4.2H26z" fill="#0052CC" />
+    <path d="M34.4 34.4h11.8L42 38.6H30.2z" fill="#09326C" />
+  </g>
+</svg>

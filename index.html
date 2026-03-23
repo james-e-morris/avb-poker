@@ -105,20 +105,39 @@
               <span class="formula-label">A. Score</span>
               <span class="formula-desc"
                 >Raw Score = Size of Effort x Complexity Multiplier x Uncertainty Multiplier x Cognitive Multiplier x
-                Dependency Multiplier x Risk Multiplier, then rounded to a whole number &nbsp;(rounded range 1-12)</span
+                Dependency Multiplier x Risk Multiplier, then rounded to a whole number &nbsp;(rounded range 1-13)</span
               >
             </div>
             <div class="formula-item">
               <span class="formula-label">B. Basis</span>
               <span class="formula-desc"
-                >Size is the base. For every other factor: score 1→x1, 2→x1.05, 3→x1.1, 4→x1.15, 5→x1.2. Example: 5 x
-                1.05 x 1.05 x 1.05 x 1.05 x 1.05 = 6.38, rounded to 6.</span
+                >Size options are 1, 2, 3, 5, 8. For every other factor: score 1→x1, 2→x1.025, 3→x1.05, 4→x1.075,
+                5→x1.1. Top-end example: 8 x 1.1 x 1.1 x 1.1 x 1.1 x 1.1 = 12.88, rounded to 13.</span
               >
             </div>
             <div class="formula-item">
               <span class="formula-label">C. SP</span>
               <span class="formula-desc"
                 >Suggested SP is the nearest Fibonacci card to the rounded score: 1, 2, 3, 5, 8, 13.</span
+              >
+            </div>
+            <div class="formula-item">
+              <span class="formula-label">D. Size (BE + FE examples)</span>
+              <span class="formula-desc"
+                >1: tiny/localized (BE: rename response field + tests, FE: copy or spacing tweak). 2: small/simple (BE:
+                add optional response field, FE: add minor form option). 3: standard/modest (BE: refactor one handler
+                with helper/query update, FE: new small component using existing contract). 5: multi-step single domain
+                (BE: workflow/refactor with retries/batching, FE: new moderately complex wizard step with validation).
+                8: large/cross-cutting (BE: cross-system workflow/config integration, FE: major multi-step feature area
+                with multiple screens and edge-case handling).</span
+              >
+            </div>
+            <div class="formula-item">
+              <span class="formula-label">E. Multiplier range examples</span>
+              <span class="formula-desc"
+                >Bottom range (score 1 => x1.0): BE low-complexity rename/mapper change, FE low-impact styling/text
+                update. Top range (score 5 => x1.1): BE high-risk multi-branch integration workflow, FE high-complexity
+                dynamic flow with retries/error states and cross-team dependencies.</span
               >
             </div>
           </div>
@@ -177,13 +196,17 @@
           <div class="calc-inputs">
             <div class="calc-row">
               <div class="calc-field">
-                <label>Size of Effort<span class="calc-hint">1=Small tweak · 5=Large cross-cutting effort</span></label>
-                <div class="scale-buttons" data-metric="size" role="radiogroup" aria-label="Size of Effort">
+                <label
+                  >Size of Effort<span class="calc-hint"
+                    >Implementation effort if everything is clear: 1, 2, 3, 5, 8</span
+                  ></label
+                >
+                <div class="scale-buttons size-scale" data-metric="size" role="radiogroup" aria-label="Size of Effort">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
                   <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
                   <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
-                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
                   <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                  <button type="button" class="scale-btn" data-value="8" aria-pressed="false">8</button>
                 </div>
               </div>
               <div class="calc-field">
@@ -276,7 +299,7 @@
               <div class="calc-result-item">
                 <span class="result-label">Rounded Score</span>
                 <span class="result-value" id="out-bes">1</span>
-                <span class="result-range">Range 1-12</span>
+                <span class="result-range">Range 1-13</span>
               </div>
               <div class="calc-result-item">
                 <span class="result-label">Multiplication Formula</span>

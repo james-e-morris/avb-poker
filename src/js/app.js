@@ -16,10 +16,10 @@ function mapToFibonacci(roundedScore) {
 function scoreToMultiplier(score) {
   const multiplierMap = {
     1: 1,
-    2: 1.05,
-    3: 1.1,
-    4: 1.15,
-    5: 1.2,
+    2: 1.025,
+    3: 1.05,
+    4: 1.075,
+    5: 1.1,
   };
   return multiplierMap[score] || 1;
 }
@@ -615,6 +615,55 @@ function updateCalcOutput() {
   }
 }
 
+function getScaleExample(metric, value) {
+  const examples = {
+    size: {
+      1: 'Tiny. BE: rename one response field + 1-2 tests. FE: copy/spacing tweak in an existing screen.',
+      2: 'Small. BE: add one optional API field from existing config. FE: add a minor form option using current pattern.',
+      3: 'Standard. BE: refactor one handler to a new helper/query. FE: add a small component using an existing contract.',
+      5: 'Multi-step. BE: workflow update with retries/batching in one domain. FE: new wizard step with validation and responsive states.',
+      8: 'Large. BE: cross-system workflow touching integrations/config. FE: multi-step feature area across screens with edge-state handling.',
+    },
+    complexity: {
+      1: 'Simple path. One main branch and minimal logic.',
+      2: 'Between simple and highly complex.',
+      3: 'Moderate branching and coordination.',
+      4: 'High branching with multiple side effects.',
+      5: 'Most complex. Multi-branch workflow with several states, side effects, and failure paths.',
+    },
+    uncertainty: {
+      1: 'Very clear. Requirements and expected behavior are already known.',
+      2: 'Mostly clear, with minor unknowns.',
+      3: 'Moderate ambiguity in behavior or acceptance details.',
+      4: 'High ambiguity requiring discovery and validation.',
+      5: 'Most uncertain. Key behavior depends on unknowns in upstream systems or evolving requirements.',
+    },
+    cognitive: {
+      1: 'Low mental load. Small isolated change with obvious boundaries.',
+      2: 'A few moving parts, still straightforward.',
+      3: 'Moderate context switching across modules.',
+      4: 'High context tracking across multiple concerns.',
+      5: 'Highest load. Many interconnected flows must be kept in sync mentally.',
+    },
+    deps: {
+      1: 'Low dependency risk. Internal-only change with no external coordination.',
+      2: 'One lightweight dependency or coordination point.',
+      3: 'A few dependencies that need sequencing.',
+      4: 'Several dependencies with fragile integration points.',
+      5: 'Dependency-heavy. Multiple systems/teams must align for a safe release.',
+    },
+    risk: {
+      1: 'Low impact if wrong. Cosmetic or non-critical behavior.',
+      2: 'Limited impact, easy rollback.',
+      3: 'Moderate user impact if regression occurs.',
+      4: 'High impact and harder rollback path.',
+      5: 'Highest impact. Regressions could break core user flows or critical production behavior.',
+    },
+  };
+
+  return examples[metric]?.[value] || '';
+}
+
 function setupCalcButtons() {
   const groups = document.querySelectorAll('.scale-buttons');
   groups.forEach((group) => {
@@ -622,8 +671,13 @@ function setupCalcButtons() {
     const buttons = group.querySelectorAll('.scale-btn');
 
     buttons.forEach((btn) => {
+      const value = Number(btn.dataset.value);
+      const example = getScaleExample(metric, value);
+      if (example) {
+        btn.dataset.popover = example;
+      }
+
       btn.addEventListener('click', () => {
-        const value = Number(btn.dataset.value);
         state.calcSelections[metric] = value;
 
         buttons.forEach((other) => {

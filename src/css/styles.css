@@ -676,7 +676,7 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   align-items: stretch;
-  flex: 1;
+  flex: 0 0 auto;
   padding: 14px 16px;
   gap: 12px;
   transition: grid-template-columns 0.18s ease;
@@ -1274,8 +1274,8 @@ select {
    RESPONSIVE
    ============================================================ */
 
-/* ---- Large Desktop (> 1180px) ---- */
-@media (max-width: 1180px) {
+/* Keep calculator two-column longer; stack only on narrower screens */
+@media (max-width: 900px) {
   .calculator {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -1849,8 +1849,11 @@ select {
     font-size: 0.55rem;
   }
   .scale-buttons {
-    grid-template-columns: repeat(5, minmax(24px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 3px;
+  }
+  .scale-buttons.size-scale {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .scale-btn {
     padding: 5px 1px;

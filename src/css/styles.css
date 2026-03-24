@@ -608,7 +608,8 @@ select {
 .vote-cards-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 18px;
   justify-content: center;
   padding: 18px 20px 32px;
   align-content: flex-start;
@@ -648,7 +649,7 @@ select {
 .vote-card.suggested-preview:not(:disabled):not(.selected)::after {
   content: 'vote?';
   position: absolute;
-  top: calc(100% + 5px);
+  top: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.65rem;
@@ -1290,7 +1291,8 @@ select {
   }
   .vote-cards-grid {
     padding: 16px 16px 24px;
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 16px;
   }
   .vote-card {
     width: 54px;
@@ -1464,7 +1466,8 @@ select {
   }
   .vote-cards-grid {
     padding: 14px 12px 20px;
-    gap: 6px;
+    column-gap: 6px;
+    row-gap: 14px;
   }
   .vote-card {
     width: 50px;
@@ -1682,7 +1685,8 @@ select {
   }
   .vote-cards-grid {
     padding: 10px 8px 16px;
-    gap: 5px;
+    column-gap: 5px;
+    row-gap: 12px;
   }
   .vote-card {
     width: 46px;
@@ -1891,7 +1895,8 @@ select {
   }
   .vote-cards-grid {
     padding: 10px 12px;
-    gap: 6px;
+    column-gap: 6px;
+    row-gap: 12px;
   }
   .vote-card {
     width: 44px;

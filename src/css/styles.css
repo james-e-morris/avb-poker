@@ -446,7 +446,7 @@ select {
   gap: 16px;
   justify-content: center;
   min-height: 72px;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 /* Participant Card (3D Flip) */

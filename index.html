@@ -105,7 +105,7 @@
               <span class="formula-label">A. Score</span>
               <span class="formula-desc"
                 >Raw Score = Size x Complexity x Uncertainty x Cognitive x Dependencies x Risk.<br />Rounded Score =
-                Math.round(Raw Score).</span
+                Math.round(Raw Score).  Suggested SP uses range-based mapping to ensure proper high-value rounding.</span
               >
             </div>
             <div class="formula-item">
@@ -122,7 +122,7 @@
             <div class="formula-item">
               <span class="formula-label">D. Suggested SP</span>
               <span class="formula-desc"
-                >Suggested SP is the nearest Fibonacci value to Rounded Score: 1, 2, 3, 5, 8, 13.</span
+                >Suggested SP uses range-based Fibonacci mapping: &lt;1.1→1, &lt;2.1→2, &lt;4→3, &lt;6→5, &lt;10→8, ≥10→13.</span
               >
             </div>
             <div class="formula-item">

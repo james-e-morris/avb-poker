@@ -30,9 +30,9 @@ describe('Story Point Calculation', () => {
       expect(result.rawScore).toBeCloseTo(expected, 5);
     });
 
-    test('rounds to nearest Fibonacci', () => {
+    test('maps raw score to Fibonacci by range', () => {
       const result = calculateSP(10, 1, 1, 1, 1, 1);
-      expect([8, 13]).toContain(result.sp);
+      expect(result.sp).toBe(13);
     });
 
     test('handles edge case of size 0', () => {

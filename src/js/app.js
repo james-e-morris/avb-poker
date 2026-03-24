@@ -7,10 +7,14 @@
 
 const FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];
 
-// Rounded score -> Suggested SP mapping
-function mapToFibonacci(roundedScore) {
-  const fibs = [1, 2, 3, 5, 8, 13];
-  return fibs.reduce((prev, curr) => (Math.abs(curr - roundedScore) < Math.abs(prev - roundedScore) ? curr : prev));
+// Raw score -> Suggested SP mapping (range-based)
+function mapToFibonacci(rawScore) {
+  if (rawScore < 1.1) return 1;
+  if (rawScore < 2.1) return 2;
+  if (rawScore < 4) return 3;
+  if (rawScore < 6) return 5;
+  if (rawScore < 10) return 8;
+  return 13;
 }
 
 function scoreToMultiplier(score) {
@@ -37,10 +41,14 @@ function voteColorClass(vote) {
   return 'vote-high';
 }
 
-// Nearest Fibonacci to a float
+// Map average vote to Fibonacci by range (range-based)
 function nearestFib(avg) {
-  const fibs = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
-  return fibs.reduce((prev, curr) => (Math.abs(curr - avg) < Math.abs(prev - avg) ? curr : prev));
+  if (avg < 1.1) return 1;
+  if (avg < 2.1) return 2;
+  if (avg < 4) return 3;
+  if (avg < 6) return 5;
+  if (avg < 10) return 8;
+  return 13;
 }
 
 // ---- App State ---------------------------------------------
@@ -709,7 +717,7 @@ function calculateSP(size, c, u, cl, d, r) {
     size * complexityMultiplier * uncertaintyMultiplier * cognitiveMultiplier * dependencyMultiplier * riskMultiplier;
 
   const roundedScore = Math.round(total);
-  const sp = mapToFibonacci(roundedScore);
+  const sp = mapToFibonacci(total);
   return {
     rawScore: total,
     roundedScore,

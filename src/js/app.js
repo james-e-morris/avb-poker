@@ -82,7 +82,91 @@ const state = {
     deps: 1,
     risk: 1,
   },
+  selectedExampleId: null,
 };
+
+const EXAMPLE_SCENARIOS = [
+  {
+    id: 'baseline-min',
+    group: 'Calibration',
+    title: 'Baseline tiny change',
+    params: { size: 1, complexity: 1, uncertainty: 1, cognitive: 1, deps: 1, risk: 1 },
+    backend: 'Add an optional query parameter to an existing GET endpoint and update one unit test.',
+    frontend: 'Rename one field label and helper text in an existing settings form.',
+  },
+  {
+    id: 'size1-high-complexity',
+    group: 'Calibration',
+    title: 'Tiny scope, high complexity',
+    params: { size: 1, complexity: 3, uncertainty: 1, cognitive: 1, deps: 1, risk: 1 },
+    backend: 'Fix a race condition in webhook idempotency handling inside an existing worker.',
+    frontend: 'Patch an optimistic-update rollback bug in inline table editing.',
+  },
+  {
+    id: 'size1-high-uncertainty',
+    group: 'Calibration',
+    title: 'Tiny scope, high uncertainty',
+    params: { size: 1, complexity: 1, uncertainty: 3, cognitive: 1, deps: 1, risk: 1 },
+    backend: 'Spike a small endpoint against a third-party fraud API with incomplete docs.',
+    frontend: 'Prototype one onboarding step while required fields are still being finalized.',
+  },
+  {
+    id: 'size1-high-cognitive',
+    group: 'Calibration',
+    title: 'Tiny scope, high cognitive load',
+    params: { size: 1, complexity: 1, uncertainty: 1, cognitive: 3, deps: 1, risk: 1 },
+    backend: 'Refactor a legacy discount-rule evaluator without changing current outputs.',
+    frontend: 'Untangle nested permission states in admin panel toggle flows.',
+  },
+  {
+    id: 'size1-high-deps',
+    group: 'Calibration',
+    title: 'Tiny scope, high dependencies',
+    params: { size: 1, complexity: 1, uncertainty: 1, cognitive: 1, deps: 3, risk: 1 },
+    backend: 'Add one field that must propagate through API gateway, auth service, and notifications.',
+    frontend: 'Ship one profile attribute that depends on backend contract and shared design tokens.',
+  },
+  {
+    id: 'size1-high-risk',
+    group: 'Calibration',
+    title: 'Tiny scope, high risk',
+    params: { size: 1, complexity: 1, uncertainty: 1, cognitive: 1, deps: 1, risk: 3 },
+    backend: 'Hotfix token-refresh logic on the login path to prevent session invalidation.',
+    frontend: 'Fix checkout primary-action state on payment confirmation path.',
+  },
+  {
+    id: 'balanced-medium',
+    group: 'Delivery',
+    title: 'Balanced medium story',
+    params: { size: 3, complexity: 2, uncertainty: 2, cognitive: 2, deps: 2, risk: 2 },
+    backend: 'Build paginated audit-log API with filters and basic indexing.',
+    frontend: 'Build audit-log table with filters, pagination, and empty/error states.',
+  },
+  {
+    id: 'integration-heavy',
+    group: 'Delivery',
+    title: 'Integration-heavy workflow',
+    params: { size: 5, complexity: 2, uncertainty: 2, cognitive: 2, deps: 3, risk: 2 },
+    backend: 'Implement order-status sync between internal DB and external ERP with retries.',
+    frontend: 'Add order timeline UI driven by new sync events across services.',
+  },
+  {
+    id: 'discovery-spike',
+    group: 'Discovery',
+    title: 'Discovery spike',
+    params: { size: 2, complexity: 1, uncertainty: 3, cognitive: 2, deps: 1, risk: 2 },
+    backend: 'Prototype semantic-search API using vector index plus fallback keyword query.',
+    frontend: 'Prototype search UX with relevance badges and zero-result guidance.',
+  },
+  {
+    id: 'max-profile',
+    group: 'Stretch',
+    title: 'Maximum profile',
+    params: { size: 8, complexity: 3, uncertainty: 3, cognitive: 3, deps: 3, risk: 3 },
+    backend: 'Migrate to multi-tenant permissions across auth, API, and reporting services.',
+    frontend: 'Rework navigation and guarded routes for tenant-aware roles across the app.',
+  },
+];
 
 function summarizeVotes(participants) {
   const entries = Object.entries(participants || {}).sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0));
@@ -191,6 +275,24 @@ function toggleHistorySidebar() {
   const gameView = document.getElementById('view-game');
   if (!gameView) return;
   setHistorySidebarExpanded(!gameView.classList.contains('history-open'));
+}
+
+function setExamplesSidebarExpanded(expanded) {
+  const gameView = document.getElementById('view-game');
+  const sidebar = document.getElementById('examples-sidebar');
+  const openBtn = document.getElementById('btn-toggle-examples-float');
+  if (!gameView || !sidebar || !openBtn) return;
+
+  gameView.classList.toggle('examples-open', !!expanded);
+  sidebar.classList.toggle('is-collapsed', !expanded);
+  openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  openBtn.hidden = !!expanded;
+}
+
+function toggleExamplesSidebar() {
+  const gameView = document.getElementById('view-game');
+  if (!gameView) return;
+  setExamplesSidebarExpanded(!gameView.classList.contains('examples-open'));
 }
 
 function openStoryModal() {
@@ -741,23 +843,151 @@ function calculateSP(size, c, u, cl, d, r) {
 }
 
 function resetCalculatorSelectionsToDefault() {
-  state.calcSelections = {
+  applyCalcSelections({
     size: 1,
     complexity: 1,
     uncertainty: 1,
     cognitive: 1,
     deps: 1,
     risk: 1,
+  });
+}
+
+function applyCalcSelections(nextSelections) {
+  state.calcSelections = {
+    ...state.calcSelections,
+    ...nextSelections,
   };
 
   document.querySelectorAll('.scale-buttons').forEach((group) => {
+    const metric = group.dataset.metric;
+    const selectedValue = Number(state.calcSelections[metric]);
     const buttons = group.querySelectorAll('.scale-btn');
     buttons.forEach((btn) => {
-      const selected = Number(btn.dataset.value) === 1;
+      const selected = Number(btn.dataset.value) === selectedValue;
       btn.classList.toggle('is-selected', selected);
       btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
   });
+
+  updateCalcOutput();
+  syncExampleSelectionFromCalc();
+}
+
+function paramsMatchSelection(params) {
+  return (
+    Number(params.size) === Number(state.calcSelections.size) &&
+    Number(params.complexity) === Number(state.calcSelections.complexity) &&
+    Number(params.uncertainty) === Number(state.calcSelections.uncertainty) &&
+    Number(params.cognitive) === Number(state.calcSelections.cognitive) &&
+    Number(params.deps) === Number(state.calcSelections.deps) &&
+    Number(params.risk) === Number(state.calcSelections.risk)
+  );
+}
+
+function getMatchingExampleIdForCurrentSelection() {
+  const match = EXAMPLE_SCENARIOS.find((item) => paramsMatchSelection(item.params));
+  return match ? match.id : null;
+}
+
+function updateExampleCardSelection() {
+  document.querySelectorAll('.example-entry').forEach((node) => {
+    const selected = node.dataset.exampleId === state.selectedExampleId;
+    node.classList.toggle('is-selected', selected);
+    node.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+}
+
+function syncExampleSelectionFromCalc() {
+  state.selectedExampleId = getMatchingExampleIdForCurrentSelection();
+  updateExampleCardSelection();
+}
+
+function applyExampleScenario(exampleId) {
+  const scenario = EXAMPLE_SCENARIOS.find((item) => item.id === exampleId);
+  if (!scenario) return;
+
+  state.selectedExampleId = scenario.id;
+  applyCalcSelections(scenario.params);
+}
+
+function getExampleSummary(params) {
+  const metrics = [
+    ['complexity', 'Complexity'],
+    ['uncertainty', 'Uncertainty'],
+    ['cognitive', 'Cognitive'],
+    ['deps', 'Dependencies'],
+    ['risk', 'Risk'],
+  ];
+
+  const toLevel = (value) => ({ 1: 'Low', 2: 'Medium', 3: 'High' })[Number(value)] || String(value);
+  const allLow = metrics.every(([key]) => Number(params[key]) === 1);
+  const allHigh = Number(params.size) === 8 && metrics.every(([key]) => Number(params[key]) === 3);
+
+  if (allLow) return 'Size 1, all Low';
+  if (allHigh) return 'Size 8, all High';
+
+  const highlights = metrics
+    .filter(([key]) => Number(params[key]) !== 1)
+    .map(([key, label]) => `${label} ${toLevel(params[key])}`);
+
+  if (!highlights.length) {
+    return `Size ${params.size}, mostly Low`;
+  }
+
+  return `Size ${params.size} • ${highlights.join(' • ')}`;
+}
+
+function renderExamplesSidebar() {
+  const listEl = document.getElementById('examples-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = '';
+
+  const groups = EXAMPLE_SCENARIOS.reduce((acc, item) => {
+    const group = item.group || 'Examples';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(item);
+    return acc;
+  }, {});
+
+  Object.entries(groups).forEach(([groupName, scenarios]) => {
+    const section = el('section', 'examples-group');
+    section.appendChild(el('h4', 'examples-group-title', groupName));
+
+    scenarios.forEach((scenario) => {
+      const card = el('button', 'example-entry');
+      card.type = 'button';
+      card.dataset.exampleId = scenario.id;
+      card.setAttribute('aria-pressed', 'false');
+
+      const title = el('div', 'example-entry-title', scenario.title);
+      const ratings = el('div', 'example-entry-ratings', getExampleSummary(scenario.params));
+
+      const beLabel = el('div', 'example-label', 'BE');
+      const beText = el('div', 'example-text', scenario.backend);
+      const feLabel = el('div', 'example-label', 'FE');
+      const feText = el('div', 'example-text', scenario.frontend);
+
+      card.appendChild(title);
+      card.appendChild(ratings);
+      card.appendChild(beLabel);
+      card.appendChild(beText);
+      card.appendChild(feLabel);
+      card.appendChild(feText);
+
+      card.addEventListener('click', () => {
+        applyExampleScenario(scenario.id);
+        setExamplesSidebarExpanded(true);
+      });
+
+      section.appendChild(card);
+    });
+
+    listEl.appendChild(section);
+  });
+
+  syncExampleSelectionFromCalc();
 }
 
 function updateCalcOutput() {
@@ -781,7 +1011,7 @@ function updateCalcOutput() {
   document.getElementById('out-formula').textContent =
     `${size} x ${complexityMultiplier} x ${uncertaintyMultiplier} x ${cognitiveMultiplier} x ${dependencyMultiplier} x ${riskMultiplier}`;
   document.getElementById('out-formula-total').textContent =
-    `= ${formattedRawScore} raw -> ${result.sp} rounded`;
+    `= ${formattedRawScore} raw -> ${result.sp} score`;
   document.getElementById('out-sp').textContent = result.sp;
 
   document.getElementById('out-factor-size').textContent = `${size} (base)`;
@@ -793,7 +1023,7 @@ function updateCalcOutput() {
 
   const voteBtn = document.getElementById('btn-vote-calc');
   voteBtn.dataset.sp = result.sp;
-  voteBtn.textContent = `Vote ${result.sp} SP`;
+  voteBtn.textContent = `Vote ${result.sp}`;
 
   // Keep Fibonacci cards visually in sync with the current calculator suggestion.
   if (document.getElementById('vote-cards')) {
@@ -804,36 +1034,36 @@ function updateCalcOutput() {
 function getScaleExample(metric, value) {
   const examples = {
     size: {
-      1: 'Tiny\n\nBE: rename one response field + 1-2 tests\n\nFE: copy/spacing tweak in an existing screen',
-      2: 'Small\n\nBE: add one optional API field from existing config\n\nFE: add a minor form option using current pattern',
-      3: 'Standard\n\nBE: refactor one handler to a new helper/query\n\nFE: add a small component using an existing contract',
-      5: 'Multi-step\n\nBE: workflow update with retries/batching in one domain\n\nFE: new wizard step with validation and responsive states',
-      8: 'Large\n\nBE: cross-system workflow touching integrations/config\n\nFE: multi-step feature area across screens with edge-state handling',
+      1: 'Tiny\nSmall tweak in one place',
+      2: 'Small\nStraightforward change',
+      3: 'Standard\nA few coordinated updates',
+      5: 'Large\nMulti-step workflow change',
+      8: 'Very large\nCross-team/cross-system scope',
     },
     complexity: {
-      1: 'Low complexity\n\nBE: add one mapper branch or small endpoint tweak on an existing path\n\nFE: adjust one existing component state or validation message',
-      2: 'Medium complexity\n\nBE: refactor one handler/service with a few branching rules\n\nFE: build a new component with conditional rendering and form-state handling',
-      3: 'High complexity\n\nBE: orchestrate multi-branch workflow with side effects and rollback handling\n\nFE: ship a multi-state journey with async retries, error recovery, and cross-screen coordination',
+      1: 'Low complexity\nClear path, low branching',
+      2: 'Medium complexity\nSome branching and edge cases',
+      3: 'High complexity\nMany moving parts and states',
     },
     uncertainty: {
-      1: 'Low uncertainty\n\nBE: acceptance criteria and API contract are stable and already proven\n\nFE: interaction model is fully specified with approved states',
-      2: 'Medium uncertainty\n\nBE: one contract or data-shape decision still needs validation\n\nFE: some edge-state behavior still needs UX confirmation',
-      3: 'High uncertainty\n\nBE: key behavior depends on unresolved upstream or evolving requirements\n\nFE: user flow and failure states require discovery before final implementation',
+      1: 'Low uncertainty\nRequirements are clear',
+      2: 'Medium uncertainty\nA few open questions',
+      3: 'High uncertainty\nKey assumptions are unresolved',
     },
     cognitive: {
-      1: 'Low cognitive load\n\nBE: isolated update in one module with clear boundaries\n\nFE: localized screen tweak with minimal state tracking',
-      2: 'Medium cognitive load\n\nBE: coordinate a few modules plus one shared utility or schema\n\nFE: maintain multiple component states and interaction rules',
-      3: 'High cognitive load\n\nBE: keep several interconnected flows, state transitions, and side effects aligned\n\nFE: track dense cross-screen state, guardrails, and edge-case transitions',
+      1: 'Low cognitive load\nEasy to reason about',
+      2: 'Medium cognitive load\nMultiple concepts to track',
+      3: 'High cognitive load\nComplex coordination required',
     },
     deps: {
-      1: 'Low dependency surface\n\nBE: internal-only change, no external service contract update\n\nFE: UI-only change with current API responses',
-      2: 'Medium dependency surface\n\nBE: coordinate one or two downstream services or queues\n\nFE: update UI flow to align with one backend contract adjustment',
-      3: 'High dependency surface\n\nBE: sequence multiple systems/teams and integration checkpoints\n\nFE: release requires backend, design, and QA alignment across feature boundaries',
+      1: 'Low dependencies\nMostly self-contained',
+      2: 'Medium dependencies\nSome external coordination',
+      3: 'High dependencies\nMultiple teams/systems involved',
     },
     risk: {
-      1: 'Low risk / impact of failure\n\nBE: non-critical endpoint, easy rollback, limited blast radius\n\nFE: cosmetic or minor workflow polish with low user impact',
-      2: 'Medium risk / impact of failure\n\nBE: user-visible service behavior where regression impacts part of the journey\n\nFE: key workflow step where a bug causes noticeable friction',
-      3: 'High risk / impact of failure\n\nBE: production-critical path with outage/data integrity exposure if wrong\n\nFE: core journey breakage that blocks task completion and complicates rollback',
+      1: 'Low risk\nLow user impact if wrong',
+      2: 'Medium risk\nNoticeable impact if wrong',
+      3: 'High risk\nCritical impact if wrong',
     },
   };
 
@@ -980,15 +1210,7 @@ function setupCalcButtons() {
 
       btn.addEventListener('click', () => {
         hideCalcPopover();
-        state.calcSelections[metric] = value;
-
-        buttons.forEach((other) => {
-          const selected = other === btn;
-          other.classList.toggle('is-selected', selected);
-          other.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        });
-
-        updateCalcOutput();
+        applyCalcSelections({ [metric]: value });
       });
     });
   });
@@ -1005,7 +1227,7 @@ function setCalcDetailsExpanded(expanded) {
     calculator.classList.add('calc-details-open');
     calculator.classList.remove('calc-details-hidden');
     toggleBtn.setAttribute('aria-expanded', 'true');
-    toggleBtn.textContent = 'Hide calculations';
+    toggleBtn.textContent = 'Hide details';
     return;
   }
 
@@ -1013,7 +1235,7 @@ function setCalcDetailsExpanded(expanded) {
   calculator.classList.remove('calc-details-open');
   calculator.classList.add('calc-details-hidden');
   toggleBtn.setAttribute('aria-expanded', 'false');
-  toggleBtn.textContent = 'View calculations';
+  toggleBtn.textContent = 'Show details';
 }
 
 function syncCalcLabelWidth() {
@@ -1156,7 +1378,7 @@ function updateStatusBar(participants, status) {
   const textEl = document.getElementById('status-text');
 
   if (status === 'revealed') {
-    textEl.textContent = 'Votes revealed! See results below.';
+    textEl.textContent = 'Revealed. Results below.';
     bar.className = 'status-bar';
     return;
   }
@@ -1167,10 +1389,10 @@ function updateStatusBar(participants, status) {
   const allVoted = voted === total && total > 0;
 
   if (allVoted) {
-    textEl.textContent = 'Everyone has voted — moderator can reveal now.';
+    textEl.textContent = 'All votes in. Ready to reveal.';
     bar.className = 'status-bar status-ready';
   } else {
-    textEl.textContent = `Voting in progress — ${total - voted} player${total - voted !== 1 ? 's' : ''} yet to vote`;
+    textEl.textContent = `${total - voted} player${total - voted !== 1 ? 's' : ''} left to vote`;
     bar.className = 'status-bar';
   }
 }
@@ -1211,7 +1433,7 @@ function showResults(session) {
 
   document.getElementById('results-avg').textContent = avg !== null ? avg.toFixed(1) : '—';
   document.getElementById('results-consensus').textContent =
-    summary.distinctNumericVotes === 0 ? '—' : isConsensus ? '✅' : `❌ (${summary.distinctNumericVotes} values)`;
+    summary.distinctNumericVotes === 0 ? 'No votes' : isConsensus ? 'Consensus' : `Split (${summary.distinctNumericVotes})`;
   document.getElementById('results-nearest').textContent = avg !== null ? `${summary.nearest} SP` : '—';
 
   const hasFinalDecision = session.finalDecision !== null && session.finalDecision !== undefined;
@@ -1221,15 +1443,15 @@ function showResults(session) {
   const nextStoryBtn = document.getElementById('btn-next-story');
   const revealBtn = document.getElementById('btn-reveal');
   if (finalValueEl) {
-    finalValueEl.textContent = hasFinalDecision ? `${finalDecision} SP` : 'Not decided';
+    finalValueEl.textContent = hasFinalDecision ? `${finalDecision} SP` : 'Not set';
     finalValueEl.classList.toggle('is-empty', !hasFinalDecision);
   }
   if (finalHintEl) {
     finalHintEl.textContent = hasFinalDecision
-      ? 'Moderator final decision applied.'
+      ? 'Final decision set.'
       : state.isModerator
-        ? 'Select the final team decision for this story.'
-        : 'Waiting for moderator final decision.';
+        ? 'Pick the final decision for this story.'
+        : 'Waiting for moderator pick.';
   }
   renderFinalDecisionPicker(finalDecision, state.isModerator && session.status === 'revealed');
 
@@ -1302,7 +1524,7 @@ function renderSessionHistory(historyItems) {
     const meta = el(
       'div',
       'history-entry-meta',
-      `${time.textContent} • Avg ${avg} • Consensus ${consensus} • Final ${final}`
+      `${time.textContent} • Avg ${avg} • ${consensus} • Final ${final}`
     );
 
     const voteText = (item.votes || []).map((vote) => `${vote.name || 'Anonymous'}: ${vote.vote ?? '—'}`).join(' | ');
@@ -1335,7 +1557,7 @@ function updateFooter(participants, status) {
   const voted = entries.filter(([, p]) => p.hasVoted).length;
   const total = entries.length;
 
-  document.getElementById('vote-count-label').textContent = `${voted} / ${total} voted`;
+  document.getElementById('vote-count-label').textContent = `${voted} of ${total} voted`;
 
   const revealBtn = document.getElementById('btn-reveal');
   revealBtn.hidden = !(state.isModerator && voted > 0);
@@ -1354,6 +1576,7 @@ async function enterGame(sessionId) {
   try {
     showView('game');
     setHistorySidebarExpanded(false);
+    setExamplesSidebarExpanded(false);
     state.initialStoryPromptChecked = false;
     syncCalcLabelWidth();
     setCalcDetailsExpanded(false);
@@ -1363,12 +1586,12 @@ async function enterGame(sessionId) {
 
     if (state.dbMode === 'demo') {
       showToast(
-        'Demo mode — works across tabs on same browser. Configure ably-config.js for cross-location realtime',
+        'Demo mode: works across tabs on this browser.',
         'info',
-        5000
+        3600
       );
     } else if (state.dbMode === 'ably') {
-      showToast('Realtime mode via Ably — session state is ephemeral', 'info', 4500);
+      showToast('Realtime mode enabled (Ably).', 'info', 3200);
     }
   } catch (err) {
     console.error('[Planning Poker] Failed to enter game:', err);
@@ -1381,6 +1604,7 @@ async function enterGame(sessionId) {
 function leaveGame() {
   unsubscribeFromSession();
   setHistorySidebarExpanded(false);
+  setExamplesSidebarExpanded(false);
   setCalcDetailsExpanded(false);
   state.sessionId = null;
   state.sessionData = null;
@@ -1520,14 +1744,28 @@ function setupEventListeners() {
 
   document.getElementById('btn-toggle-history-float').addEventListener('click', toggleHistorySidebar);
   document.getElementById('btn-collapse-history').addEventListener('click', () => setHistorySidebarExpanded(false));
+  document.getElementById('btn-toggle-examples-float').addEventListener('click', toggleExamplesSidebar);
+  document.getElementById('btn-collapse-examples').addEventListener('click', () => setExamplesSidebarExpanded(false));
+
+  renderExamplesSidebar();
 
   document.getElementById('view-game').addEventListener('click', (e) => {
     const gameView = document.getElementById('view-game');
-    if (!gameView.classList.contains('history-open')) return;
+    const historyOpen = gameView.classList.contains('history-open');
+    const examplesOpen = gameView.classList.contains('examples-open');
+    if (!historyOpen && !examplesOpen) return;
+
     const sidebar = document.getElementById('history-sidebar');
     const fab = document.getElementById('btn-toggle-history-float');
-    if (!sidebar.contains(e.target) && !fab.contains(e.target)) {
+    const examplesSidebar = document.getElementById('examples-sidebar');
+    const examplesFab = document.getElementById('btn-toggle-examples-float');
+
+    if (historyOpen && !sidebar.contains(e.target) && !fab.contains(e.target)) {
       setHistorySidebarExpanded(false);
+    }
+
+    if (examplesOpen && !examplesSidebar.contains(e.target) && !examplesFab.contains(e.target)) {
+      setExamplesSidebarExpanded(false);
     }
   });
 
@@ -1540,7 +1778,7 @@ function setupEventListeners() {
     const sp = document.getElementById('btn-vote-calc').dataset.sp;
     if (!sp) return;
     castVote(sp);
-    showToast(`Voted ${sp} SP (from smart calculator)`, 'success');
+    showToast(`Voted ${sp} SP`, 'success');
   });
 
   document.getElementById('btn-toggle-calc-details').addEventListener('click', () => {

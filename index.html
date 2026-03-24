@@ -33,16 +33,14 @@
       <main class="home-main">
         <div class="hero">
           <h1>AVB Planning Poker</h1>
-          <p class="hero-sub">
-            Research-backed 6-dimension story point estimation — complexity stays honest even when AI writes the code.
-          </p>
+          <p class="hero-sub">Fast, focused planning poker with a smart points suggestion.</p>
         </div>
 
         <div class="home-cards">
           <!-- Create -->
           <div class="card create-card">
             <h2>Create Session</h2>
-            <p class="card-desc">Start a new planning session and share the link with your team.</p>
+            <p class="card-desc">Start a session and share the link.</p>
             <div class="form-group">
               <label for="session-name-input">Session Name</label>
               <input
@@ -63,7 +61,7 @@
                 autocomplete="given-name"
               />
             </div>
-            <button id="btn-create" class="btn btn-primary">Create Session →</button>
+            <button id="btn-create" class="btn btn-primary">Create session</button>
           </div>
 
           <div class="home-divider"><span>or</span></div>
@@ -71,7 +69,7 @@
           <!-- Join -->
           <div class="card join-card">
             <h2>Join Session</h2>
-            <p class="card-desc">Enter a session ID from someone who created a session.</p>
+            <p class="card-desc">Join with a session ID.</p>
             <div class="form-group">
               <label for="join-id-input">Session ID</label>
               <input
@@ -93,7 +91,7 @@
                 autocomplete="given-name"
               />
             </div>
-            <button id="btn-join" class="btn btn-secondary">Join Session →</button>
+            <button id="btn-join" class="btn btn-secondary">Join session</button>
           </div>
         </div>
 
@@ -158,7 +156,7 @@
         </div>
         <div class="game-header-center">
           <div class="story-bar">
-            <span class="story-label">Story:</span>
+            <span class="story-label">Story</span>
             <span id="game-story-display" class="story-value">—</span>
             <button id="btn-edit-story" class="icon-btn mod-only" title="Story Name" style="display: none">
               <span class="icon-pencil" aria-hidden="true">✎</span>
@@ -180,13 +178,31 @@
         History
       </button>
 
+      <button
+        id="btn-toggle-examples-float"
+        class="btn btn-ghost btn-sm examples-fab"
+        aria-expanded="false"
+        aria-controls="examples-sidebar"
+      >
+        Examples
+      </button>
+
       <aside id="history-sidebar" class="history-sidebar is-collapsed" aria-labelledby="session-history-heading">
         <div class="history-sidebar-head">
           <h3 id="session-history-heading" class="history-sidebar-title">History</h3>
           <button id="btn-collapse-history" class="icon-btn history-collapse-btn" title="Collapse history">←</button>
         </div>
-        <p id="session-history-empty" class="session-history-empty">No stories revealed yet.</p>
+        <p id="session-history-empty" class="session-history-empty">No revealed stories yet.</p>
         <div id="session-history-list" class="session-history-list" aria-live="polite"></div>
+      </aside>
+
+      <aside id="examples-sidebar" class="examples-sidebar is-collapsed" aria-labelledby="examples-sidebar-heading">
+        <div class="examples-sidebar-head">
+          <h3 id="examples-sidebar-heading" class="examples-sidebar-title">Examples</h3>
+          <button id="btn-collapse-examples" class="icon-btn examples-collapse-btn" title="Collapse examples">→</button>
+        </div>
+        <p class="examples-sidebar-subtitle">Click an example to apply it.</p>
+        <div id="examples-list" class="examples-list" aria-live="polite"></div>
       </aside>
 
       <!-- Participants -->
@@ -196,7 +212,7 @@
 
       <!-- Status Bar -->
       <div id="status-bar" class="status-bar">
-        <span id="status-text">Waiting for votes…</span>
+        <span id="status-text">Waiting for votes</span>
       </div>
 
       <!-- Voting Area -->
@@ -205,7 +221,7 @@
           <div class="calc-inputs">
             <div class="calc-row">
               <div class="calc-field">
-                <label>Size of Effort<span class="calc-hint">Implementation effort</span></label>
+                <label>Size<span class="calc-hint">Implementation effort</span></label>
                 <div class="scale-buttons size-scale" data-metric="size" role="radiogroup" aria-label="Size of Effort">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
                   <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
@@ -215,7 +231,7 @@
                 </div>
               </div>
               <div class="calc-field">
-                <label>Technical Complexity<span class="calc-hint">Architecture complexity</span></label>
+                <label>Complexity<span class="calc-hint">Technical difficulty</span></label>
                 <div class="scale-buttons" data-metric="complexity" role="radiogroup" aria-label="Technical Complexity">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
                   <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
@@ -228,7 +244,7 @@
 
             <div class="calc-row">
               <div class="calc-field">
-                <label>Uncertainty / Ambiguity<span class="calc-hint">Requirement clarity</span></label>
+                <label>Uncertainty<span class="calc-hint">Requirement clarity</span></label>
                 <div
                   class="scale-buttons"
                   data-metric="uncertainty"
@@ -243,7 +259,7 @@
                 </div>
               </div>
               <div class="calc-field">
-                <label>Cognitive Load<span class="calc-hint">Mental load and context switching</span></label>
+                <label>Cognitive Load<span class="calc-hint">Mental effort</span></label>
                 <div class="scale-buttons" data-metric="cognitive" role="radiogroup" aria-label="Cognitive Load">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
                   <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
@@ -256,7 +272,7 @@
 
             <div class="calc-row">
               <div class="calc-field">
-                <label>Integration<span class="calc-hint">External dependencies</span></label>
+                <label>Dependencies<span class="calc-hint">External coordination</span></label>
                 <div
                   class="scale-buttons"
                   data-metric="deps"
@@ -271,7 +287,7 @@
                 </div>
               </div>
               <div class="calc-field">
-                <label>Risk / Impact of Failure<span class="calc-hint">Impact if implementation fails</span></label>
+                <label>Risk<span class="calc-hint">Impact of failure</span></label>
                 <div class="scale-buttons" data-metric="risk" role="radiogroup" aria-label="Risk and Impact of Failure">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
                   <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
@@ -286,33 +302,33 @@
           <div class="calc-output">
             <div class="calc-result-grid">
               <div class="calc-result-item highlight">
-                <span class="result-label">Suggested SP</span>
+                <span class="result-label">Suggested points</span>
                 <span class="result-value sp-big" id="out-sp">1</span>
               </div>
             </div>
-            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote 1 SP</button>
+            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote 1</button>
             <button
               id="btn-toggle-calc-details"
               class="btn btn-ghost btn-sm btn-calc-toggle"
               aria-expanded="false"
               aria-controls="calc-details"
             >
-              View calculations
+              Show details
             </button>
             <div id="calc-details" class="calc-details" hidden>
               <div class="calc-result-grid calc-result-grid-advanced">
                 <div class="calc-result-item">
-                  <span class="result-label">Rounded Score</span>
+                  <span class="result-label">Score</span>
                   <span class="result-value" id="out-bes">1</span>
                   <span class="result-range">Range 1-13</span>
                 </div>
                 <div class="calc-result-item">
-                  <span class="result-label">Multiplication Formula</span>
+                  <span class="result-label">Formula</span>
                   <code class="result-value formula-value" id="out-formula">1 x 1 x 1 x 1 x 1 x 1</code>
-                  <span class="result-range" id="out-formula-total">= 1 raw -> 1 rounded</span>
+                  <span class="result-range" id="out-formula-total">= 1 raw -> 1 score</span>
                 </div>
               </div>
-              <div class="factor-breakdown" aria-label="Multiplicative factor inputs">
+              <div class="factor-breakdown" aria-label="Factor breakdown">
                 <div class="factor-chip">
                   <span class="factor-name">Size</span>
                   <span class="factor-math" id="out-factor-size">1 (base)</span>
@@ -368,10 +384,10 @@
         </div>
         <div class="results-decision" aria-live="polite">
           <div class="results-decision-top">
-            <span class="stat-label">Final Decision</span>
-            <span class="results-final-value is-empty" id="results-final-value">Not decided</span>
+            <span class="stat-label">Final pick</span>
+            <span class="results-final-value is-empty" id="results-final-value">Not set</span>
           </div>
-          <p id="results-final-hint" class="results-final-hint">Waiting for moderator final decision.</p>
+          <p id="results-final-hint" class="results-final-hint">Waiting for moderator pick.</p>
           <div id="results-final-picker" class="results-final-picker" hidden></div>
         </div>
       </div>
@@ -380,12 +396,12 @@
       <footer class="game-footer">
         <div id="footer-voting" class="footer-section">
           <button id="btn-reveal" class="btn btn-primary mod-only" hidden>Reveal Votes</button>
-          <span id="vote-count-label" class="vote-count">0 / 0 voted</span>
-          <span id="waiting-label" class="muted-text participant-only">Waiting for moderator to reveal…</span>
+          <span id="vote-count-label" class="vote-count">0 of 0 voted</span>
+          <span id="waiting-label" class="muted-text participant-only">Waiting for reveal…</span>
         </div>
         <div id="footer-revealed" class="footer-section" hidden>
           <button id="btn-next-story" class="btn btn-secondary mod-only" style="display: none">Next Story</button>
-          <span class="muted-text participant-only">Waiting for moderator to start next story…</span>
+          <span class="muted-text participant-only">Waiting for next story…</span>
         </div>
       </footer>
     </div>
@@ -396,7 +412,7 @@
        ====================================================== -->
     <div id="modal-story" class="modal-overlay" hidden>
       <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-story-title">
-        <h3 id="modal-story-title">Story Name</h3>
+        <h3 id="modal-story-title">Story</h3>
         <input
           type="text"
           id="story-input"
@@ -416,8 +432,8 @@
        ====================================================== -->
     <div id="modal-next-story" class="modal-overlay" hidden>
       <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-next-story-title">
-        <h3 id="modal-next-story-title">Start Next Story</h3>
-        <input type="text" id="next-story-input" class="modal-input" placeholder="Enter story name" maxlength="80" />
+        <h3 id="modal-next-story-title">Next story</h3>
+        <input type="text" id="next-story-input" class="modal-input" placeholder="Story name" maxlength="80" />
         <div class="modal-buttons">
           <button id="btn-next-story-cancel" class="btn btn-ghost">Cancel</button>
           <button id="btn-next-story-start" class="btn btn-primary">Start Story</button>

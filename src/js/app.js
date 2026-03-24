@@ -587,7 +587,7 @@ function updateCalcOutput() {
   const cognitiveMultiplier = formatCalcNumber(result.multipliers.cognitive);
   const dependencyMultiplier = formatCalcNumber(result.multipliers.deps);
   const riskMultiplier = formatCalcNumber(result.multipliers.risk);
-  const levelLabel = (value) => ({ 1: 'Low', 2: 'Medium', 3: 'High' }[value] || String(value));
+  const levelLabel = (value) => ({ 1: 'Low', 2: 'Medium', 3: 'High' })[value] || String(value);
 
   document.getElementById('out-bes').textContent = String(result.roundedScore);
   document.getElementById('out-formula').textContent =
@@ -1271,14 +1271,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   router();
 
-  // Demo mode badge
-  if (state.dbMode === 'demo') {
-    const badge = el('div', 'demo-mode-badge', '🔓 Demo Mode');
-    badge.title = 'Multi-tab sync works locally. Configure ably-config.js for cross-location realtime.';
-    document.body.appendChild(badge);
-  } else if (state.dbMode === 'ably') {
-    const badge = el('div', 'demo-mode-badge', '⚡ Ably Realtime');
-    badge.title = 'Cross-location realtime sync via Ably. Session state expires automatically.';
-    document.body.appendChild(badge);
-  }
+  // BE mode badge
+  // if (state.dbMode === 'demo') {
+  //   const badge = el('div', 'demo-mode-badge', '🔓 Demo Mode');
+  //   badge.title = 'Multi-tab sync works locally. Configure ably-config.js for cross-location realtime.';
+  //   document.body.appendChild(badge);
+  // } else if (state.dbMode === 'ably') {
+  //   const badge = el('div', 'demo-mode-badge', '⚡ Ably Realtime');
+  //   badge.title = 'Cross-location realtime sync via Ably. Session state expires automatically.';
+  //   document.body.appendChild(badge);
+  // }
 });

@@ -13,14 +13,18 @@ function mapToFibonacci(rawScore) {
   if (rawScore < 4) return 3;
   if (rawScore < 6) return 5;
   if (rawScore < 10) return 8;
-  return 13;
+  if (rawScore < 17) return 13;
+  if (rawScore < 27) return 21;
+  if (rawScore < 44) return 34;
+  if (rawScore < 72) return 55;
+  return 89;
 }
 
 function scoreToMultiplier(score) {
   const multiplierMap = {
     1: 1,
-    2: 1.05,
-    3: 1.1,
+    2: 1.1,
+    3: 1.2,
   };
   return multiplierMap[score] || 1;
 }
@@ -45,7 +49,11 @@ function nearestFib(avg) {
   if (avg < 4) return 3;
   if (avg < 6) return 5;
   if (avg < 10) return 8;
-  return 13;
+  if (avg < 17) return 13;
+  if (avg < 27) return 21;
+  if (avg < 44) return 34;
+  if (avg < 72) return 55;
+  return 89;
 }
 
 // Utility functions

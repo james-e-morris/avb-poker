@@ -47,12 +47,12 @@ describe('Utility Functions', () => {
       expect(scoreToMultiplier(1)).toBe(1);
     });
 
-    test('score 2 returns 1.05', () => {
-      expect(scoreToMultiplier(2)).toBe(1.05);
+    test('score 2 returns 1.1', () => {
+      expect(scoreToMultiplier(2)).toBe(1.1);
     });
 
-    test('score 3 returns 1.1', () => {
-      expect(scoreToMultiplier(3)).toBe(1.1);
+    test('score 3 returns 1.2', () => {
+      expect(scoreToMultiplier(3)).toBe(1.2);
     });
 
     test('score above 3 defaults to 1', () => {

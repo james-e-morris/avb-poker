@@ -20,13 +20,13 @@ describe('Story Point Calculation', () => {
 
     test('applies complexity multiplier', () => {
       const result = calculateSP(1, 2, 1, 1, 1, 1);
-      expect(result.rawScore).toBe(1.05);
-      expect(result.multipliers.complexity).toBe(1.05);
+      expect(result.rawScore).toBe(1.1);
+      expect(result.multipliers.complexity).toBe(1.1);
     });
 
     test('applies all multipliers correctly', () => {
       const result = calculateSP(5, 2, 2, 2, 2, 2);
-      const expected = 5 * 1.05 * 1.05 * 1.05 * 1.05 * 1.05;
+      const expected = 5 * 1.1 * 1.1 * 1.1 * 1.1 * 1.1;
       expect(result.rawScore).toBeCloseTo(expected, 5);
     });
 
@@ -42,18 +42,18 @@ describe('Story Point Calculation', () => {
 
     test('handles maximum multipliers', () => {
       const result = calculateSP(13, 3, 3, 3, 3, 3);
-      const expected = 13 * 1.1 * 1.1 * 1.1 * 1.1 * 1.1;
+      const expected = 13 * 1.2 * 1.2 * 1.2 * 1.2 * 1.2;
       expect(result.rawScore).toBeCloseTo(expected, 5);
       expect(result.sp).toBeGreaterThan(0);
     });
 
     test('returns correct multiplier breakdown', () => {
       const result = calculateSP(3, 3, 2, 2, 1, 3);
-      expect(result.multipliers.complexity).toBe(1.1);
-      expect(result.multipliers.uncertainty).toBe(1.05);
-      expect(result.multipliers.cognitive).toBe(1.05);
+      expect(result.multipliers.complexity).toBe(1.2);
+      expect(result.multipliers.uncertainty).toBe(1.1);
+      expect(result.multipliers.cognitive).toBe(1.1);
       expect(result.multipliers.deps).toBe(1);
-      expect(result.multipliers.risk).toBe(1.1);
+      expect(result.multipliers.risk).toBe(1.2);
     });
 
     test('rawScore matches calculation', () => {
@@ -65,7 +65,7 @@ describe('Story Point Calculation', () => {
       const risk = 2;
 
       const result = calculateSP(size, complexity, uncertainty, cognitive, deps, risk);
-      const manualCalc = size * 1.1 * 1.05 * 1.1 * 1 * 1.05;
+      const manualCalc = size * 1.2 * 1.1 * 1.2 * 1 * 1.1;
       expect(result.rawScore).toBeCloseTo(manualCalc, 5);
     });
 

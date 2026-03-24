@@ -76,7 +76,7 @@ describe('Story Point Calculation', () => {
 
     test('sp is in Fibonacci sequence', () => {
       const result = calculateSP(21, 3, 3, 3, 3, 3);
-      const fib = [1, 2, 3, 5, 8, 13];
+      const fib = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
       expect(fib).toContain(result.sp);
     });
   });

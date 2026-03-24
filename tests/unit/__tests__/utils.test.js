@@ -15,30 +15,29 @@ const {
 
 describe('Utility Functions', () => {
   describe('mapToFibonacci', () => {
-    test('maps 1 to 1', () => {
-      expect(mapToFibonacci(1)).toBe(1);
-    });
-
-    test('maps 2 to 2', () => {
-      expect(mapToFibonacci(2)).toBe(2);
-    });
-
-    test('maps 4 to 3 or 5 (closest)', () => {
-      const result = mapToFibonacci(4);
-      expect([3, 5]).toContain(result);
-    });
-
-    test('maps 15 to 13', () => {
-      expect(mapToFibonacci(15)).toBe(13);
-    });
-
-    test('maps 0 to 1', () => {
+    test('maps values in each bucket', () => {
       expect(mapToFibonacci(0)).toBe(1);
+      expect(mapToFibonacci(1.5)).toBe(2);
+      expect(mapToFibonacci(3.9)).toBe(3);
+      expect(mapToFibonacci(5.9)).toBe(5);
+      expect(mapToFibonacci(9.9)).toBe(8);
+      expect(mapToFibonacci(16.9)).toBe(13);
+      expect(mapToFibonacci(26.9)).toBe(21);
+      expect(mapToFibonacci(43.9)).toBe(34);
+      expect(mapToFibonacci(71.9)).toBe(55);
+      expect(mapToFibonacci(100)).toBe(89);
     });
 
-    test('handles large numbers', () => {
-      const result = mapToFibonacci(100);
-      expect(result).toBe(13); // 13 is max in fibs array
+    test('maps threshold boundaries to the next bucket', () => {
+      expect(mapToFibonacci(1.1)).toBe(2);
+      expect(mapToFibonacci(2.1)).toBe(3);
+      expect(mapToFibonacci(4)).toBe(5);
+      expect(mapToFibonacci(6)).toBe(8);
+      expect(mapToFibonacci(10)).toBe(13);
+      expect(mapToFibonacci(17)).toBe(21);
+      expect(mapToFibonacci(27)).toBe(34);
+      expect(mapToFibonacci(44)).toBe(55);
+      expect(mapToFibonacci(72)).toBe(89);
     });
   });
 
@@ -127,29 +126,28 @@ describe('Utility Functions', () => {
   });
 
   describe('nearestFib', () => {
-    test('returns 0 for 0', () => {
-      expect(nearestFib(0)).toBe(0);
-    });
-
-    test('returns 1 for 1', () => {
+    test('returns mapped value across buckets', () => {
+      expect(nearestFib(0)).toBe(1);
       expect(nearestFib(1)).toBe(1);
-    });
-
-    test('returns nearest for 4', () => {
-      expect(nearestFib(4)).toBe(3);
-    });
-
-    test('returns nearest for 6', () => {
-      expect(nearestFib(6)).toBe(5);
-    });
-
-    test('returns 89 for 100', () => {
+      expect(nearestFib(2)).toBe(2);
+      expect(nearestFib(4)).toBe(5);
+      expect(nearestFib(6)).toBe(8);
+      expect(nearestFib(12)).toBe(13);
+      expect(nearestFib(19)).toBe(21);
+      expect(nearestFib(34)).toBe(34);
+      expect(nearestFib(70)).toBe(55);
       expect(nearestFib(100)).toBe(89);
     });
 
-    test('handles decimals', () => {
-      const result = nearestFib(4.5);
-      expect([3, 5]).toContain(result);
+    test('handles decimal boundary transitions', () => {
+      expect(nearestFib(1.1)).toBe(2);
+      expect(nearestFib(2.1)).toBe(3);
+      expect(nearestFib(3.99)).toBe(3);
+      expect(nearestFib(4.5)).toBe(5);
+      expect(nearestFib(16.99)).toBe(13);
+      expect(nearestFib(17.01)).toBe(21);
+      expect(nearestFib(44.01)).toBe(55);
+      expect(nearestFib(72.01)).toBe(89);
     });
   });
 

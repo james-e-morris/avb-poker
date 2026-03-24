@@ -840,7 +840,107 @@ function getScaleExample(metric, value) {
   return examples[metric]?.[value] || '';
 }
 
+let calcPopoverEl = null;
+let calcPopoverOwner = null;
+let calcPopoverBound = false;
+
+function ensureCalcPopoverElement() {
+  if (calcPopoverEl && document.body.contains(calcPopoverEl)) return calcPopoverEl;
+
+  calcPopoverEl = document.createElement('div');
+  calcPopoverEl.className = 'calc-popover';
+  calcPopoverEl.setAttribute('role', 'tooltip');
+  calcPopoverEl.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(calcPopoverEl);
+  return calcPopoverEl;
+}
+
+function positionCalcPopover(button) {
+  const popover = ensureCalcPopoverElement();
+  if (!button || !document.body.contains(button)) return;
+
+  const buttonRect = button.getBoundingClientRect();
+  const tipRect = popover.getBoundingClientRect();
+  const margin = 8;
+  const gap = 12;
+
+  let left = buttonRect.left + buttonRect.width / 2 - tipRect.width / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+
+  let top = buttonRect.bottom + gap;
+  let above = false;
+
+  if (top + tipRect.height > window.innerHeight - margin) {
+    top = buttonRect.top - tipRect.height - gap;
+    above = true;
+  }
+
+  if (top < margin) {
+    top = margin;
+    above = false;
+  }
+
+  popover.style.left = `${Math.round(left)}px`;
+  popover.style.top = `${Math.round(top)}px`;
+  popover.classList.toggle('is-above', above);
+}
+
+function showCalcPopover(button) {
+  const text = button?.dataset?.popover;
+  if (!button || !text) return;
+
+  const popover = ensureCalcPopoverElement();
+  calcPopoverOwner = button;
+  popover.textContent = text;
+  popover.classList.add('is-visible');
+  popover.setAttribute('aria-hidden', 'false');
+  positionCalcPopover(button);
+}
+
+function hideCalcPopover(owner) {
+  if (owner && owner !== calcPopoverOwner) return;
+  if (!calcPopoverEl) return;
+
+  calcPopoverOwner = null;
+  calcPopoverEl.classList.remove('is-visible', 'is-above');
+  calcPopoverEl.setAttribute('aria-hidden', 'true');
+}
+
+function bindCalcPopoverGlobals() {
+  if (calcPopoverBound) return;
+  calcPopoverBound = true;
+
+  window.addEventListener('resize', () => {
+    if (calcPopoverOwner) {
+      positionCalcPopover(calcPopoverOwner);
+    }
+  });
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (calcPopoverOwner) {
+        positionCalcPopover(calcPopoverOwner);
+      }
+    },
+    true
+  );
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!calcPopoverOwner) return;
+    if (event.target === calcPopoverOwner || calcPopoverOwner.contains(event.target)) return;
+    hideCalcPopover();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) hideCalcPopover();
+  });
+}
+
 function setupCalcButtons() {
+  bindCalcPopoverGlobals();
+  ensureCalcPopoverElement();
+
   const groups = document.querySelectorAll('.scale-buttons');
   groups.forEach((group) => {
     const metric = group.dataset.metric;
@@ -851,9 +951,35 @@ function setupCalcButtons() {
       const example = getScaleExample(metric, value);
       if (example) {
         btn.dataset.popover = example;
+
+        if (!btn.dataset.popoverBound) {
+          btn.dataset.popoverBound = 'true';
+
+          btn.addEventListener('pointerenter', () => showCalcPopover(btn));
+          btn.addEventListener('focus', () => showCalcPopover(btn));
+
+          btn.addEventListener('pointerleave', (event) => {
+            const nextButton = event.relatedTarget?.closest?.('.scale-btn[data-popover]');
+            if (nextButton) {
+              showCalcPopover(nextButton);
+              return;
+            }
+            hideCalcPopover(btn);
+          });
+
+          btn.addEventListener('blur', () => hideCalcPopover(btn));
+
+          btn.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+              hideCalcPopover(btn);
+              btn.blur();
+            }
+          });
+        }
       }
 
       btn.addEventListener('click', () => {
+        hideCalcPopover();
         state.calcSelections[metric] = value;
 
         buttons.forEach((other) => {

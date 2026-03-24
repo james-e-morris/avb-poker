@@ -21,6 +21,23 @@
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.1);
+
+  /* Layer scale: keep a single source of truth for stacking order. */
+  --z-base: 1;
+  --z-sticky-header: 10;
+  --z-calculator: 20;
+  --z-history-fab: 30;
+  --z-history-sidebar: 40;
+  --z-demo-badge: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+
+  /* Local calculator stack (inside .calculator stacking context). */
+  --z-calc-row-base: 1;
+  --z-calc-row-active: 2;
+  --z-calc-field-active: 3;
+  --z-calc-button-base: 4;
+  --z-overlay-popover: 90;
   --r: 8px;
   --r-lg: 14px;
   --font: 'Inter', system-ui, sans-serif;
@@ -208,7 +225,7 @@ select {
   background: var(--surface);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-sticky-header);
 }
 .logo {
   display: flex;
@@ -741,7 +758,7 @@ select {
   padding: 14px 16px;
   gap: 12px;
   position: relative;
-  z-index: 20;
+  z-index: var(--z-calculator);
   transition: grid-template-columns 0.18s ease;
 }
 
@@ -767,15 +784,15 @@ select {
   grid-template-columns: subgrid;
   row-gap: 12px;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-calc-row-base);
 }
 
 .calc-row:hover {
-  z-index: 1300;
+  z-index: var(--z-calc-row-active);
 }
 
 .calc-row:focus-within {
-  z-index: 1200;
+  z-index: var(--z-calc-row-active);
 }
 .calc-field {
   display: grid;
@@ -786,11 +803,11 @@ select {
 }
 
 .calc-field:hover {
-  z-index: 2;
+  z-index: var(--z-calc-field-active);
 }
 
 .calc-field:focus-within {
-  z-index: 1;
+  z-index: var(--z-calc-field-active);
 }
 .calc-field label {
   font-size: 0.8rem;
@@ -822,7 +839,7 @@ select {
 }
 .scale-btn {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-calc-button-base);
   border: 1.5px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -838,52 +855,6 @@ select {
     color 0.15s,
     transform 0.12s;
 }
-
-.scale-btn[data-popover]:hover,
-.scale-btn[data-popover]:focus-visible {
-  z-index: 1250;
-}
-
-.scale-btn[data-popover]::after {
-  content: attr(data-popover);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 12px);
-  transform: translate(-50%, -6px);
-  width: max-content;
-  max-width: 270px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #1e293b;
-  background: #0f172a;
-  color: #e2e8f0;
-  font-size: 0.74rem;
-  line-height: 1.35;
-  text-align: left;
-  white-space: pre-line;
-  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1300;
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
-}
-
-.scale-btn[data-popover]:hover::after,
-.scale-btn[data-popover]:focus-visible::after {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-[data-theme='light'] .scale-btn[data-popover]::after {
-  border-color: #334155;
-}
-
-[data-theme='dark'] .scale-btn[data-popover]::after {
-  border-color: #475569;
-  background: #020617;
-}
 .scale-btn:hover {
   border-color: var(--primary);
   color: var(--text);
@@ -897,6 +868,56 @@ select {
   border-color: var(--primary);
   background: var(--primary);
   color: #fff;
+}
+
+.calc-popover {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  text-align: left;
+  white-space: pre-line;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: var(--z-overlay-popover);
+  transform: translateY(-6px);
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease,
+    visibility 0s linear 0.14s;
+}
+
+.calc-popover.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease,
+    visibility 0s;
+}
+
+.calc-popover.is-above {
+  transform: translateY(6px);
+}
+
+[data-theme='light'] .calc-popover {
+  border-color: #334155;
+}
+
+[data-theme='dark'] .calc-popover {
+  border-color: #475569;
+  background: #020617;
 }
 
 /* Size scale gets a distinct visual language from the other factor buttons. */
@@ -1147,7 +1168,7 @@ select {
 
 .fibonacci-section {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
@@ -1295,7 +1316,7 @@ select {
   box-shadow: var(--shadow-md);
   transform: translateX(0);
   transition: transform 0.18s ease;
-  z-index: 40;
+  z-index: var(--z-history-sidebar);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1305,7 +1326,7 @@ select {
   position: fixed;
   top: 66px;
   left: 12px;
-  z-index: 24;
+  z-index: var(--z-history-fab);
   box-shadow: var(--shadow);
 }
 
@@ -1441,7 +1462,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: var(--z-modal);
   padding: 20px;
   backdrop-filter: blur(4px);
 }
@@ -1494,7 +1515,7 @@ select {
   border-radius: 30px;
   font-size: 0.875rem;
   font-weight: 600;
-  z-index: 200;
+  z-index: var(--z-toast);
   background: #1e293b;
   color: #e2e8f0;
   box-shadow: var(--shadow-lg);
@@ -1537,7 +1558,7 @@ select {
   padding: 4px 10px;
   border-radius: 20px;
   border: 1px solid #92400e;
-  z-index: 50;
+  z-index: var(--z-demo-badge);
   box-shadow: var(--shadow);
 }
 

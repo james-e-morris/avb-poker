@@ -205,11 +205,7 @@
           <div class="calc-inputs">
             <div class="calc-row">
               <div class="calc-field">
-                <label
-                  >Size of Effort<span class="calc-hint"
-                    >Implementation effort if everything is clear: 1, 2, 3, 5, 8</span
-                  ></label
-                >
+                <label>Size of Effort<span class="calc-hint">Implementation effort</span></label>
                 <div class="scale-buttons size-scale" data-metric="size" role="radiogroup" aria-label="Size of Effort">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
                   <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
@@ -219,14 +215,12 @@
                 </div>
               </div>
               <div class="calc-field">
-                <label
-                  >Technical Complexity<span class="calc-hint"
-                    >Low / Medium / High architectural complexity</span
-                  ></label
-                >
+                <label>Technical Complexity<span class="calc-hint">Architecture complexity</span></label>
                 <div class="scale-buttons" data-metric="complexity" role="radiogroup" aria-label="Technical Complexity">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
+                    <span class="btn-label-full">Medium</span><span class="btn-label-short">Med</span>
+                  </button>
                   <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
@@ -234,7 +228,7 @@
 
             <div class="calc-row">
               <div class="calc-field">
-                <label>Uncertainty / Ambiguity<span class="calc-hint">Low / Medium / High ambiguity</span></label>
+                <label>Uncertainty / Ambiguity<span class="calc-hint">Requirement clarity</span></label>
                 <div
                   class="scale-buttons"
                   data-metric="uncertainty"
@@ -242,15 +236,19 @@
                   aria-label="Uncertainty or Ambiguity"
                 >
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
+                    <span class="btn-label-full">Medium</span><span class="btn-label-short">Med</span>
+                  </button>
                   <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
               <div class="calc-field">
-                <label>Cognitive Load<span class="calc-hint">Low / Medium / High mental load</span></label>
+                <label>Cognitive Load<span class="calc-hint">Mental load and context switching</span></label>
                 <div class="scale-buttons" data-metric="cognitive" role="radiogroup" aria-label="Cognitive Load">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
+                    <span class="btn-label-full">Medium</span><span class="btn-label-short">Med</span>
+                  </button>
                   <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
@@ -258,11 +256,7 @@
 
             <div class="calc-row">
               <div class="calc-field">
-                <label
-                  >Integration / Dependencies<span class="calc-hint"
-                    >Low / Medium / High dependency complexity</span
-                  ></label
-                >
+                <label>Integration<span class="calc-hint">External dependencies</span></label>
                 <div
                   class="scale-buttons"
                   data-metric="deps"
@@ -270,19 +264,19 @@
                   aria-label="Integration and Dependencies"
                 >
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
+                    <span class="btn-label-full">Medium</span><span class="btn-label-short">Med</span>
+                  </button>
                   <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
               <div class="calc-field">
-                <label
-                  >Risk / Impact of Failure<span class="calc-hint"
-                    >Low / Medium / High impact if this fails</span
-                  ></label
-                >
+                <label>Risk / Impact of Failure<span class="calc-hint">Impact if implementation fails</span></label>
                 <div class="scale-buttons" data-metric="risk" role="radiogroup" aria-label="Risk and Impact of Failure">
                   <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">
+                    <span class="btn-label-full">Medium</span><span class="btn-label-short">Med</span>
+                  </button>
                   <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
@@ -294,10 +288,9 @@
               <div class="calc-result-item highlight">
                 <span class="result-label">Suggested SP</span>
                 <span class="result-value sp-big" id="out-sp">1</span>
-                <span class="result-range" id="out-sp-basis">Rounded score 1 maps to 1 SP</span>
               </div>
             </div>
-            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote Suggested SP (1)</button>
+            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote 1 SP</button>
             <button
               id="btn-toggle-calc-details"
               class="btn btn-ghost btn-sm btn-calc-toggle"

@@ -595,7 +595,6 @@ function updateCalcOutput() {
   document.getElementById('out-formula-total').textContent =
     `= ${formattedRawScore} raw -> ${result.roundedScore} rounded`;
   document.getElementById('out-sp').textContent = result.sp;
-  document.getElementById('out-sp-basis').textContent = `Rounded score ${result.roundedScore} maps to ${result.sp} SP`;
 
   document.getElementById('out-factor-size').textContent = `${size} (base)`;
   document.getElementById('out-factor-complexity').textContent = `${levelLabel(c)} => x${complexityMultiplier}`;
@@ -606,7 +605,7 @@ function updateCalcOutput() {
 
   const voteBtn = document.getElementById('btn-vote-calc');
   voteBtn.dataset.sp = result.sp;
-  voteBtn.textContent = `Vote Suggested SP (${result.sp})`;
+  voteBtn.textContent = `Vote ${result.sp} SP`;
 
   // Keep Fibonacci cards visually in sync with the current calculator suggestion.
   if (document.getElementById('vote-cards')) {
@@ -703,6 +702,25 @@ function setCalcDetailsExpanded(expanded) {
   toggleBtn.textContent = 'View calculations';
 }
 
+function syncCalcLabelWidth() {
+  const inputs = document.querySelector('.calc-inputs');
+  if (!inputs) return;
+
+  inputs.classList.remove('calc-compact-buttons');
+
+  // CSS (fit-content(45%) + column-direction labels) handles label sizing automatically.
+  // Only apply compact-buttons if buttons are too narrow for full text.
+  requestAnimationFrame(() => {
+    const btns = inputs.querySelector('.scale-buttons:not(.size-scale)');
+    if (!btns) return;
+    const btnWidth = btns.getBoundingClientRect().width;
+    // 3 buttons × 40px + 2 gaps × 8px = 136px — switch to Med labels below this
+    if (btnWidth < 136) {
+      inputs.classList.add('calc-compact-buttons');
+    }
+  });
+}
+
 // ---- UI Rendering ------------------------------------------
 
 // Escape text for safe display using DOM textContent
@@ -728,6 +746,21 @@ function updateGameHeader(session) {
   document.querySelectorAll('.participant-only').forEach((node) => {
     node.style.display = state.isModerator ? 'none' : '';
   });
+}
+
+function renderParticipantName(name, isMe, isMod) {
+  const wrapper = el('div', 'p-name');
+  wrapper.appendChild(el('span', 'p-name-text', name ? name.slice(0, 18) : 'Anonymous'));
+
+  if (isMe) {
+    wrapper.appendChild(el('span', 'you-badge', '(you)'));
+  }
+
+  if (isMod) {
+    wrapper.appendChild(el('span', 'mod-badge', '👑'));
+  }
+
+  return wrapper;
 }
 
 function renderParticipants(participants, status, justRevealed, nowRevealed) {
@@ -762,17 +795,7 @@ function renderParticipants(participants, status, justRevealed, nowRevealed) {
     wrapper.appendChild(inner);
 
     // Name row
-    const nameDiv = el('div', 'p-name');
-    nameDiv.appendChild(document.createTextNode(p.name ? p.name.slice(0, 14) : 'Anonymous'));
-    if (isMe) {
-      const you = el('span', 'you-badge', ' (you)');
-      nameDiv.appendChild(you);
-    }
-    if (isMod) {
-      const mod = el('span', 'mod-badge', ' 👑');
-      nameDiv.appendChild(mod);
-    }
-    wrapper.appendChild(nameDiv);
+    wrapper.appendChild(renderParticipantName(p.name, isMe, isMod));
     grid.appendChild(wrapper);
 
     // Staggered flip animation
@@ -912,6 +935,7 @@ async function enterGame(sessionId) {
   showView('loading');
   try {
     showView('game');
+    syncCalcLabelWidth();
     setCalcDetailsExpanded(false);
     subscribeToSession(sessionId);
     renderVoteCards(null);
@@ -1073,6 +1097,7 @@ function setupEventListeners() {
 
   // ---- Calculator ----
   setupCalcButtons();
+  syncCalcLabelWidth();
   setCalcDetailsExpanded(false);
 
   document.getElementById('btn-vote-calc').addEventListener('click', () => {
@@ -1086,6 +1111,25 @@ function setupEventListeners() {
     const isExpanded = document.getElementById('btn-toggle-calc-details').getAttribute('aria-expanded') === 'true';
     setCalcDetailsExpanded(!isExpanded);
   });
+
+  window.addEventListener('resize', () => {
+    if (document.getElementById('view-game')?.classList.contains('active')) {
+      syncCalcLabelWidth();
+    }
+  });
+
+  // ResizeObserver keeps buttons adaptive whenever the calc-inputs element
+  // changes size (window resize, panel open/close, etc.)
+  const calcInputsEl = document.querySelector('.calc-inputs');
+  if (calcInputsEl && typeof ResizeObserver !== 'undefined') {
+    let _calcResizeTimer = null;
+    new ResizeObserver(() => {
+      if (document.getElementById('view-game')?.classList.contains('active')) {
+        clearTimeout(_calcResizeTimer);
+        _calcResizeTimer = setTimeout(syncCalcLabelWidth, 60);
+      }
+    }).observe(calcInputsEl);
+  }
 
   // ---- Story Edit ----
   document.getElementById('btn-edit-story').addEventListener('click', () => {

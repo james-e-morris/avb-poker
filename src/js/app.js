@@ -97,7 +97,7 @@ function hasFinalDecision(session) {
   return session && session.finalDecision !== null && session.finalDecision !== undefined;
 }
 
-function canStartNewRound(session) {
+function canStartNextStory(session) {
   if (!session || session.status !== 'revealed') return true;
   return hasFinalDecision(session);
 }
@@ -516,20 +516,20 @@ async function setFinalDecision(value) {
   }
 }
 
-async function newRound(roundName) {
+async function nextStory(storyName) {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
-  const cleanRoundName = safeText(roundName);
+  const cleanStoryName = safeText(storyName);
 
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (session) {
-      if (!canStartNewRound(session)) {
-        showToast('Choose a Final Decision before starting the next round', 'error');
+      if (!canStartNextStory(session)) {
+        showToast('Choose a Final Decision before starting the next story', 'error');
         return;
       }
       session.status = 'voting';
-      session.story = cleanRoundName;
+      session.story = cleanStoryName;
       session.finalDecision = null;
       session.currentRevealId = null;
       Object.keys(session.participants || {}).forEach((uid) => {
@@ -542,12 +542,12 @@ async function newRound(roundName) {
   } else {
     const session = getDemoSession(sessionId);
     if (session) {
-      if (!canStartNewRound(session)) {
-        showToast('Choose a Final Decision before starting the next round', 'error');
+      if (!canStartNextStory(session)) {
+        showToast('Choose a Final Decision before starting the next story', 'error');
         return;
       }
       session.status = 'voting';
-      session.story = cleanRoundName;
+      session.story = cleanStoryName;
       session.finalDecision = null;
       session.currentRevealId = null;
       Object.keys(session.participants || {}).forEach((uid) => {
@@ -653,7 +653,7 @@ function handleSessionData(session) {
   const wasRevealed = state.wasRevealed;
   const nowRevealed = session.status === 'revealed';
   const justRevealed = nowRevealed && !wasRevealed;
-  const justStartedNewRound = previousStatus === 'revealed' && session.status === 'voting';
+  const justStartedNextStory = previousStatus === 'revealed' && session.status === 'voting';
 
   state.sessionData = session;
   state.wasRevealed = nowRevealed;
@@ -678,7 +678,7 @@ function handleSessionData(session) {
     renderVoteCards(state.currentVote); // show cards disabled
     showResults(session);
   } else {
-    if (justStartedNewRound) {
+    if (justStartedNextStory) {
       resetCalculatorSelectionsToDefault();
       updateCalcOutput();
     }
@@ -1076,7 +1076,7 @@ function showResults(session) {
   const finalDecision = hasFinalDecision ? String(session.finalDecision) : null;
   const finalValueEl = document.getElementById('results-final-value');
   const finalHintEl = document.getElementById('results-final-hint');
-  const newRoundBtn = document.getElementById('btn-new-round');
+  const nextStoryBtn = document.getElementById('btn-next-story');
   const revealBtn = document.getElementById('btn-reveal');
   if (finalValueEl) {
     finalValueEl.textContent = hasFinalDecision ? `${finalDecision} SP` : 'Not decided';
@@ -1091,10 +1091,10 @@ function showResults(session) {
   }
   renderFinalDecisionPicker(finalDecision, state.isModerator && session.status === 'revealed');
 
-  if (newRoundBtn) {
-    const canStart = canStartNewRound(session);
-    newRoundBtn.disabled = !canStart;
-    newRoundBtn.title = canStart ? '' : 'Choose a Final Decision first';
+  if (nextStoryBtn) {
+    const canStart = canStartNextStory(session);
+    nextStoryBtn.disabled = !canStart;
+    nextStoryBtn.title = canStart ? '' : 'Choose a Final Decision first';
   }
   if (revealBtn) {
     revealBtn.hidden = true;
@@ -1117,7 +1117,7 @@ function showResults(session) {
   document.getElementById('footer-voting').hidden = true;
   document.getElementById('footer-revealed').hidden = false;
 
-  // Moderator sees New Round button
+  // Moderator sees Next Story button
   document.querySelectorAll('.mod-only').forEach((n) => {
     n.style.display = state.isModerator ? '' : 'none';
   });
@@ -1451,41 +1451,41 @@ function setupEventListeners() {
     }
   });
 
-  // ---- Reveal / New Round ----
+  // ---- Reveal / Next Story ----
   document.getElementById('btn-reveal').addEventListener('click', revealVotes);
-  document.getElementById('btn-new-round').addEventListener('click', () => {
-    document.getElementById('round-input').value = '';
-    document.getElementById('modal-round').removeAttribute('hidden');
-    document.getElementById('round-input').focus();
+  document.getElementById('btn-next-story').addEventListener('click', () => {
+    document.getElementById('next-story-input').value = '';
+    document.getElementById('modal-next-story').removeAttribute('hidden');
+    document.getElementById('next-story-input').focus();
   });
 
-  document.getElementById('btn-round-cancel').addEventListener('click', () => {
-    document.getElementById('modal-round').setAttribute('hidden', '');
+  document.getElementById('btn-next-story-cancel').addEventListener('click', () => {
+    document.getElementById('modal-next-story').setAttribute('hidden', '');
   });
 
-  document.getElementById('btn-round-start').addEventListener('click', async () => {
-    const roundName = document.getElementById('round-input').value.trim();
-    if (!roundName) {
-      showToast('Round name is required', 'error');
+  document.getElementById('btn-next-story-start').addEventListener('click', async () => {
+    const storyName = document.getElementById('next-story-input').value.trim();
+    if (!storyName) {
+      showToast('Story name is required', 'error');
       return;
     }
 
-    await newRound(roundName);
-    document.getElementById('modal-round').setAttribute('hidden', '');
+    await nextStory(storyName);
+    document.getElementById('modal-next-story').setAttribute('hidden', '');
     // Reset immediately for the moderator — don't wait for poller tick
     resetCalculatorSelectionsToDefault();
     updateCalcOutput();
   });
 
-  document.getElementById('round-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('btn-round-start').click();
-    if (e.key === 'Escape') document.getElementById('btn-round-cancel').click();
+  document.getElementById('next-story-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btn-next-story-start').click();
+    if (e.key === 'Escape') document.getElementById('btn-next-story-cancel').click();
   });
 
   // Close modal on backdrop click
-  document.getElementById('modal-round').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('modal-round')) {
-      document.getElementById('modal-round').setAttribute('hidden', '');
+  document.getElementById('modal-next-story').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modal-next-story')) {
+      document.getElementById('modal-next-story').setAttribute('hidden', '');
     }
   });
 

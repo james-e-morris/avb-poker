@@ -57,6 +57,7 @@ const state = {
   demoPoller: null,
   unsubAbly: null,
   pendingSession: null,
+  initialStoryPromptChecked: false,
   calcSelections: {
     size: 1,
     complexity: 1,
@@ -66,6 +67,18 @@ const state = {
     risk: 1,
   },
 };
+
+function openStoryModal() {
+  const modal = document.getElementById('modal-story');
+  const storyInput = document.getElementById('story-input');
+  if (!modal || !storyInput) return;
+
+  storyInput.value = state.sessionData ? state.sessionData.story || '' : '';
+  if (modal.hasAttribute('hidden')) {
+    modal.removeAttribute('hidden');
+  }
+  storyInput.focus();
+}
 
 // ---- Ably Realtime ----------------------------------------
 
@@ -495,6 +508,14 @@ function handleSessionData(session) {
   state.sessionData = session;
   state.wasRevealed = nowRevealed;
   state.isModerator = session.moderatorId === state.userId;
+
+  if (!state.initialStoryPromptChecked) {
+    state.initialStoryPromptChecked = true;
+    const missingStory = !(session.story || '').trim();
+    if (state.isModerator && session.status === 'voting' && missingStory) {
+      openStoryModal();
+    }
+  }
 
   const participants = session.participants || {};
 
@@ -935,6 +956,7 @@ async function enterGame(sessionId) {
   showView('loading');
   try {
     showView('game');
+    state.initialStoryPromptChecked = false;
     syncCalcLabelWidth();
     setCalcDetailsExpanded(false);
     subscribeToSession(sessionId);
@@ -965,6 +987,7 @@ function leaveGame() {
   state.sessionData = null;
   state.currentVote = null;
   state.wasRevealed = false;
+  state.initialStoryPromptChecked = false;
   history.replaceState({}, '', window.location.pathname);
   showView('home');
 }
@@ -1133,9 +1156,7 @@ function setupEventListeners() {
 
   // ---- Story Edit ----
   document.getElementById('btn-edit-story').addEventListener('click', () => {
-    document.getElementById('story-input').value = state.sessionData ? state.sessionData.story || '' : '';
-    document.getElementById('modal-story').removeAttribute('hidden');
-    document.getElementById('story-input').focus();
+    openStoryModal();
   });
 
   document.getElementById('btn-story-cancel').addEventListener('click', () => {

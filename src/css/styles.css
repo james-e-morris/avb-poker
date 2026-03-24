@@ -152,6 +152,11 @@ select {
   background: var(--surface-2);
   color: var(--text);
 }
+.icon-pencil {
+  display: inline-block;
+  font-size: 0.74em;
+  line-height: 1;
+}
 
 /* ---- Card ------------------------------------------------- */
 .card {

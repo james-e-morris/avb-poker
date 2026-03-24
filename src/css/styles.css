@@ -600,9 +600,69 @@ select {
 .game-main {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   padding: 0;
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface-2);
+}
+
+.game-main > * {
+  width: 100%;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Scrollbar styling */
+.game-main::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.game-main::-webkit-scrollbar-track {
+  background: var(--surface-2);
+}
+
+.game-main::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+  border: 2px solid var(--surface-2);
+}
+
+.game-main::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.participants-section,
+.session-history-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface-2);
+}
+
+.participants-section::-webkit-scrollbar,
+.session-history-list::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.participants-section::-webkit-scrollbar-track,
+.session-history-list::-webkit-scrollbar-track {
+  background: var(--surface-2);
+}
+
+.participants-section::-webkit-scrollbar-thumb,
+.session-history-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+  border: 2px solid var(--surface-2);
+}
+
+.participants-section::-webkit-scrollbar-thumb:hover,
+.session-history-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 .voting-disabled {
   opacity: 0.5;
@@ -1674,7 +1734,7 @@ select {
   .vote-cards-grid {
     padding: 14px 12px 20px;
     column-gap: 6px;
-    row-gap: 14px;
+    row-gap: 16px;
   }
   .vote-card {
     width: 50px;
@@ -1892,7 +1952,7 @@ select {
   .vote-cards-grid {
     padding: 10px 8px 16px;
     column-gap: 5px;
-    row-gap: 12px;
+    row-gap: 16px;
   }
   .vote-card {
     width: 46px;
@@ -2101,7 +2161,7 @@ select {
   .vote-cards-grid {
     padding: 10px 12px;
     column-gap: 6px;
-    row-gap: 12px;
+    row-gap: 16px;
   }
   .vote-card {
     width: 44px;

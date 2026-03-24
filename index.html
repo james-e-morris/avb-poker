@@ -98,59 +98,41 @@
         </div>
 
         <!-- Formula Preview -->
-        <details class="formula-preview card">
+        <!-- <details class="formula-preview card">
           <summary>How the Story Point Calculator Works</summary>
           <div class="formula-grid">
             <div class="formula-item">
               <span class="formula-label">A. Score</span>
               <span class="formula-desc"
-                >Raw Score = Size of Effort x Complexity Multiplier x Uncertainty Multiplier x Cognitive Multiplier x
-                Dependency Multiplier x Risk Multiplier, then rounded to a whole number &nbsp;(rounded range 1-13)</span
+                >Raw Score = Size x Complexity x Uncertainty x Cognitive x Dependencies x Risk.<br />Rounded Score =
+                Math.round(Raw Score).</span
               >
             </div>
             <div class="formula-item">
-              <span class="formula-label">B. Basis</span>
+              <span class="formula-label">B. Inputs</span>
               <span class="formula-desc"
-                >Size options are 1, 2, 3, 5, 8. Every multiplier field uses Low/Medium/High where Low→x1.0,
-                Medium→x1.05, High→x1.1. Top-end example: 8 x 1.1 x 1.1 x 1.1 x 1.1 x 1.1 = 12.88, rounded to 13.</span
+                >Size options: 1, 2, 3, 5, 8.<br />Complexity, Uncertainty, Cognitive, Dependencies, and Risk each use
+                Low/Medium/High.</span
               >
             </div>
             <div class="formula-item">
-              <span class="formula-label">C. SP</span>
+              <span class="formula-label">C. Multipliers</span>
+              <span class="formula-desc">Low = x1.00, Medium = x1.05, High = x1.10.</span>
+            </div>
+            <div class="formula-item">
+              <span class="formula-label">D. Suggested SP</span>
               <span class="formula-desc"
-                >Suggested SP is the nearest Fibonacci card to the rounded score: 1, 2, 3, 5, 8, 13.</span
+                >Suggested SP is the nearest Fibonacci value to Rounded Score: 1, 2, 3, 5, 8, 13.</span
               >
             </div>
             <div class="formula-item">
-              <span class="formula-label">D. Size (BE + FE examples)</span>
+              <span class="formula-label">E. Size Guide</span>
               <span class="formula-desc"
-                >1: tiny/localized (BE: rename response field + tests, FE: copy or spacing tweak). 2: small/simple (BE:
-                add optional response field, FE: add minor form option). 3: standard/modest (BE: refactor one handler
-                with helper/query update, FE: new small component using existing contract). 5: multi-step single domain
-                (BE: workflow/refactor with retries/batching, FE: new moderately complex wizard step with validation).
-                8: large/cross-cutting (BE: cross-system workflow/config integration, FE: major multi-step feature area
-                with multiple screens and edge-case handling).</span
-              >
-            </div>
-            <div class="formula-item">
-              <span class="formula-label">E. Multiplier range examples</span>
-              <span class="formula-desc"
-                >Complexity (Low/Med/High): BE add one mapper branch / refactor one handler / coordinate multi-branch
-                orchestration. FE copy/style tune / new component with conditional states / multi-state workflow with
-                validation, retries, and fallbacks. Uncertainty (Low/Med/High): BE clear acceptance on existing API /
-                some contract unknowns / upstream behavior still undefined. FE clear mock + acceptance / partial UX
-                unknowns / behavior still exploratory. Cognitive Load (Low/Med/High): BE one-module edit / a few modules
-                and decisions / many cross-module flows held in sync. FE isolated screen tweak / moderate state
-                coordination / dense cross-screen state and edge-case coordination. Dependencies (Low/Med/High): BE
-                internal-only change / one or two service touchpoints / multiple services or teams synchronized. FE
-                local UI only / one API contract update / cross-team rollout with backend + design coordination. Risk /
-                Impact of Failure (Low/Med/High): BE low-impact non-critical path / moderate user-facing risk /
-                production-critical failure risk. FE cosmetic or low-risk UI / noticeable workflow disruption /
-                high-impact journey breakage with rollback complexity.</span
+                >1 = tiny, 2 = small, 3 = standard, 5 = multi-step, 8 = large/cross-cutting.</span
               >
             </div>
           </div>
-        </details>
+        </details> -->
       </main>
     </div>
 

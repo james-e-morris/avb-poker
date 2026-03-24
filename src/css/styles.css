@@ -707,6 +707,15 @@ select {
   grid-template-columns: subgrid;
   row-gap: 12px;
   position: relative;
+  z-index: 1;
+}
+
+.calc-row:hover {
+  z-index: 1300;
+}
+
+.calc-row:focus-within {
+  z-index: 1200;
 }
 .calc-field {
   display: grid;
@@ -716,9 +725,12 @@ select {
   position: relative;
 }
 
-.calc-field:hover,
+.calc-field:hover {
+  z-index: 2;
+}
+
 .calc-field:focus-within {
-  z-index: 1200;
+  z-index: 1;
 }
 .calc-field label {
   font-size: 0.8rem;

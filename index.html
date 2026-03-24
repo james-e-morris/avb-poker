@@ -171,6 +171,24 @@
         </div>
       </header>
 
+      <button
+        id="btn-toggle-history-float"
+        class="btn btn-ghost btn-sm history-fab"
+        aria-expanded="false"
+        aria-controls="history-sidebar"
+      >
+        History
+      </button>
+
+      <aside id="history-sidebar" class="history-sidebar is-collapsed" aria-labelledby="session-history-heading">
+        <div class="history-sidebar-head">
+          <h3 id="session-history-heading" class="history-sidebar-title">History</h3>
+          <button id="btn-collapse-history" class="icon-btn history-collapse-btn" title="Collapse history">←</button>
+        </div>
+        <p id="session-history-empty" class="session-history-empty">No stories revealed yet.</p>
+        <div id="session-history-list" class="session-history-list" aria-live="polite"></div>
+      </aside>
+
       <!-- Participants -->
       <div class="participants-section">
         <div id="participants-grid" class="participants-grid"></div>

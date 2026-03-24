@@ -68,6 +68,82 @@ const state = {
   },
 };
 
+function summarizeVotes(participants) {
+  const entries = Object.entries(participants || {}).sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0));
+  const numericVotes = entries.map(([, p]) => parseFloat(p.vote)).filter((v) => !isNaN(v));
+  const avg = numericVotes.length ? numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length : null;
+  const distinctNumericVotes = numericVotes.length ? new Set(numericVotes).size : 0;
+  const isConsensus = numericVotes.length > 0 && distinctNumericVotes === 1;
+
+  return {
+    entries,
+    avg,
+    isConsensus,
+    distinctNumericVotes,
+    nearest: avg !== null ? nearestFib(avg) : null,
+  };
+}
+
+function buildRevealHistoryEntry(session) {
+  const summary = summarizeVotes(session.participants || {});
+
+  return {
+    revealedAt: Date.now(),
+    story: safeText(session.story) || 'Untitled story',
+    avg: summary.avg,
+    isConsensus: summary.isConsensus,
+    distinctVotes: summary.distinctNumericVotes,
+    nearest: summary.nearest,
+    votes: summary.entries.map(([uid, p]) => ({
+      uid,
+      name: (p.name || 'Anonymous').slice(0, 24),
+      vote: p.hasVoted ? (p.vote ?? '—') : '✗',
+    })),
+  };
+}
+
+function appendRevealHistoryEntry(session) {
+  const history = Array.isArray(session.resultsHistory) ? session.resultsHistory : [];
+  session.resultsHistory = [buildRevealHistoryEntry(session), ...history];
+}
+
+function formatRevealTimestamp(timestamp) {
+  const t = Number(timestamp);
+  if (!t) return 'Unknown time';
+
+  const d = new Date(t);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+}
+
+function setHistorySidebarExpanded(expanded) {
+  const gameView = document.getElementById('view-game');
+  const sidebar = document.getElementById('history-sidebar');
+  const openBtn = document.getElementById('btn-toggle-history-float');
+  if (!gameView || !sidebar || !openBtn) return;
+
+  gameView.classList.toggle('history-open', !!expanded);
+  sidebar.classList.toggle('is-collapsed', !expanded);
+  openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  openBtn.hidden = !!expanded;
+}
+
+function toggleHistorySidebar() {
+  const gameView = document.getElementById('view-game');
+  if (!gameView) return;
+  setHistorySidebarExpanded(!gameView.classList.contains('history-open'));
+}
+
 function openStoryModal() {
   const modal = document.getElementById('modal-story');
   const storyInput = document.getElementById('story-input');
@@ -275,6 +351,7 @@ async function createSession(sessionName, userName) {
     status: 'voting',
     createdAt: Date.now(),
     expiresAt: Date.now() + roomTtlMs(),
+    resultsHistory: [],
     participants: {
       [userId]: {
         name: safeText(userName),
@@ -366,12 +443,16 @@ async function revealVotes() {
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (!session) return;
+    if (session.status === 'revealed') return;
+    appendRevealHistoryEntry(session);
     session.status = 'revealed';
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
     await ablyPublishState(channel, session);
   } else {
     const session = getDemoSession(sessionId);
     if (session) {
+      if (session.status === 'revealed') return;
+      appendRevealHistoryEntry(session);
       session.status = 'revealed';
       saveDemoSession(sessionId, session);
     }
@@ -522,6 +603,7 @@ function handleSessionData(session) {
   updateGameHeader(session);
   renderParticipants(participants, session.status, justRevealed, nowRevealed);
   updateStatusBar(participants, session.status);
+  renderSessionHistory(session.resultsHistory);
 
   if (nowRevealed) {
     renderVoteCards(state.currentVote); // show cards disabled
@@ -888,22 +970,20 @@ function showResults(participants) {
 
   document.getElementById('voting-area').classList.add('voting-disabled');
 
-  const entries = Object.entries(participants);
-  const numericVotes = entries.map(([, p]) => parseFloat(p.vote)).filter((v) => !isNaN(v));
-
-  const avg = numericVotes.length ? numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length : null;
-  const isConsensus = numericVotes.length > 0 && new Set(numericVotes).size === 1;
+  const summary = summarizeVotes(participants);
+  const entries = summary.entries;
+  const avg = summary.avg;
+  const isConsensus = summary.isConsensus;
 
   document.getElementById('results-avg').textContent = avg !== null ? avg.toFixed(1) : '—';
   document.getElementById('results-consensus').textContent =
-    numericVotes.length === 0 ? '—' : isConsensus ? '✅ Yes!' : `❌ No (${new Set(numericVotes).size} values)`;
-  document.getElementById('results-nearest').textContent = avg !== null ? `${nearestFib(avg)} SP` : '—';
+    summary.distinctNumericVotes === 0 ? '—' : isConsensus ? '✅ Yes!' : `❌ No (${summary.distinctNumericVotes} values)`;
+  document.getElementById('results-nearest').textContent = avg !== null ? `${summary.nearest} SP` : '—';
 
   // Vote chips
   const votesEl = document.getElementById('results-votes');
   votesEl.innerHTML = '';
   entries
-    .sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0))
     .forEach(([, p]) => {
       const chip = el('div', 'result-vote-chip');
       const name = el('span', 'rv-name');
@@ -921,6 +1001,52 @@ function showResults(participants) {
   // Moderator sees New Round button
   document.querySelectorAll('.mod-only').forEach((n) => {
     n.style.display = state.isModerator ? '' : 'none';
+  });
+}
+
+function renderSessionHistory(historyItems) {
+  const listEl = document.getElementById('session-history-list');
+  const emptyEl = document.getElementById('session-history-empty');
+  if (!listEl || !emptyEl) return;
+
+  const history = Array.isArray(historyItems)
+    ? historyItems.slice().sort((a, b) => Number(b?.revealedAt || 0) - Number(a?.revealedAt || 0))
+    : [];
+
+  listEl.innerHTML = '';
+
+  if (!history.length) {
+    emptyEl.hidden = false;
+    return;
+  }
+
+  emptyEl.hidden = true;
+
+  history.forEach((item) => {
+    const row = el('article', 'history-entry');
+    const title = el('div', 'history-entry-title');
+    const time = el('div', 'history-entry-time', formatRevealTimestamp(item.revealedAt));
+
+    const avg = item.avg === null || item.avg === undefined ? '—' : Number(item.avg).toFixed(1);
+    const nearest = item.nearest === null || item.nearest === undefined ? '—' : `${item.nearest} SP`;
+    const distinctValues = Number(item.distinctVotes || 0);
+    const consensus = distinctValues === 0 ? '—' : item.isConsensus ? 'Yes' : `No (${distinctValues} values)`;
+
+    title.appendChild(el('span', 'history-entry-story', item.story || 'Untitled story'));
+    title.appendChild(el('span', 'history-entry-sep', ' - '));
+    title.appendChild(el('span', 'history-entry-sp', nearest));
+
+    const meta = el('div', 'history-entry-meta', `${time.textContent} • Avg ${avg} • Consensus ${consensus} • ${nearest}`);
+
+    const voteText = (item.votes || [])
+      .map((vote) => `${vote.name || 'Anonymous'}: ${vote.vote ?? '—'}`)
+      .join(' | ');
+    const votes = el('div', 'history-entry-votes', voteText || 'No votes');
+
+    row.appendChild(title);
+    row.appendChild(meta);
+    row.appendChild(votes);
+    listEl.appendChild(row);
   });
 }
 
@@ -956,6 +1082,7 @@ async function enterGame(sessionId) {
   showView('loading');
   try {
     showView('game');
+    setHistorySidebarExpanded(false);
     state.initialStoryPromptChecked = false;
     syncCalcLabelWidth();
     setCalcDetailsExpanded(false);
@@ -982,12 +1109,14 @@ async function enterGame(sessionId) {
 
 function leaveGame() {
   unsubscribeFromSession();
+  setHistorySidebarExpanded(false);
   setCalcDetailsExpanded(false);
   state.sessionId = null;
   state.sessionData = null;
   state.currentVote = null;
   state.wasRevealed = false;
   state.initialStoryPromptChecked = false;
+  renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);
   showView('home');
 }
@@ -1117,6 +1246,9 @@ function setupEventListeners() {
       document.body.removeChild(tmp);
     }
   });
+
+  document.getElementById('btn-toggle-history-float').addEventListener('click', toggleHistorySidebar);
+  document.getElementById('btn-collapse-history').addEventListener('click', () => setHistorySidebarExpanded(false));
 
   // ---- Calculator ----
   setupCalcButtons();

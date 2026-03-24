@@ -16,10 +16,8 @@ function mapToFibonacci(roundedScore) {
 function scoreToMultiplier(score) {
   const multiplierMap = {
     1: 1,
-    2: 1.025,
-    3: 1.05,
-    4: 1.075,
-    5: 1.1,
+    2: 1.05,
+    3: 1.1,
   };
   return multiplierMap[score] || 1;
 }
@@ -589,6 +587,7 @@ function updateCalcOutput() {
   const cognitiveMultiplier = formatCalcNumber(result.multipliers.cognitive);
   const dependencyMultiplier = formatCalcNumber(result.multipliers.deps);
   const riskMultiplier = formatCalcNumber(result.multipliers.risk);
+  const levelLabel = (value) => ({ 1: 'Low', 2: 'Medium', 3: 'High' }[value] || String(value));
 
   document.getElementById('out-bes').textContent = String(result.roundedScore);
   document.getElementById('out-formula').textContent =
@@ -599,11 +598,11 @@ function updateCalcOutput() {
   document.getElementById('out-sp-basis').textContent = `Rounded score ${result.roundedScore} maps to ${result.sp} SP`;
 
   document.getElementById('out-factor-size').textContent = `${size} (base)`;
-  document.getElementById('out-factor-complexity').textContent = `${c} => x${complexityMultiplier}`;
-  document.getElementById('out-factor-uncertainty').textContent = `${u} => x${uncertaintyMultiplier}`;
-  document.getElementById('out-factor-cognitive').textContent = `${cl} => x${cognitiveMultiplier}`;
-  document.getElementById('out-factor-deps').textContent = `${d} => x${dependencyMultiplier}`;
-  document.getElementById('out-factor-risk').textContent = `${r} => x${riskMultiplier}`;
+  document.getElementById('out-factor-complexity').textContent = `${levelLabel(c)} => x${complexityMultiplier}`;
+  document.getElementById('out-factor-uncertainty').textContent = `${levelLabel(u)} => x${uncertaintyMultiplier}`;
+  document.getElementById('out-factor-cognitive').textContent = `${levelLabel(cl)} => x${cognitiveMultiplier}`;
+  document.getElementById('out-factor-deps').textContent = `${levelLabel(d)} => x${dependencyMultiplier}`;
+  document.getElementById('out-factor-risk').textContent = `${levelLabel(r)} => x${riskMultiplier}`;
 
   const voteBtn = document.getElementById('btn-vote-calc');
   voteBtn.dataset.sp = result.sp;
@@ -625,39 +624,29 @@ function getScaleExample(metric, value) {
       8: 'Large\n\nBE: cross-system workflow touching integrations/config\n\nFE: multi-step feature area across screens with edge-state handling',
     },
     complexity: {
-      1: 'Simple path. One main branch and minimal logic',
-      2: 'Between simple and highly complex',
-      3: 'Moderate branching and coordination',
-      4: 'High branching with multiple side effects',
-      5: 'Most complex. Multi-branch workflow with several states, side effects, and failure paths',
+      1: 'Low complexity\n\nBE: add one mapper branch or small endpoint tweak on an existing path\n\nFE: adjust one existing component state or validation message',
+      2: 'Medium complexity\n\nBE: refactor one handler/service with a few branching rules\n\nFE: build a new component with conditional rendering and form-state handling',
+      3: 'High complexity\n\nBE: orchestrate multi-branch workflow with side effects and rollback handling\n\nFE: ship a multi-state journey with async retries, error recovery, and cross-screen coordination',
     },
     uncertainty: {
-      1: 'Very clear. Requirements and expected behavior are already known',
-      2: 'Mostly clear, with minor unknowns',
-      3: 'Moderate ambiguity in behavior or acceptance details',
-      4: 'High ambiguity requiring discovery and validation',
-      5: 'Most uncertain. Key behavior depends on unknowns in upstream systems or evolving requirements',
+      1: 'Low uncertainty\n\nBE: acceptance criteria and API contract are stable and already proven\n\nFE: interaction model is fully specified with approved states',
+      2: 'Medium uncertainty\n\nBE: one contract or data-shape decision still needs validation\n\nFE: some edge-state behavior still needs UX confirmation',
+      3: 'High uncertainty\n\nBE: key behavior depends on unresolved upstream or evolving requirements\n\nFE: user flow and failure states require discovery before final implementation',
     },
     cognitive: {
-      1: 'Low mental load. Small isolated change with obvious boundaries',
-      2: 'A few moving parts, still straightforward',
-      3: 'Moderate context switching across modules',
-      4: 'High context tracking across multiple concerns',
-      5: 'Highest load. Many interconnected flows must be kept in sync mentally',
+      1: 'Low cognitive load\n\nBE: isolated update in one module with clear boundaries\n\nFE: localized screen tweak with minimal state tracking',
+      2: 'Medium cognitive load\n\nBE: coordinate a few modules plus one shared utility or schema\n\nFE: maintain multiple component states and interaction rules',
+      3: 'High cognitive load\n\nBE: keep several interconnected flows, state transitions, and side effects aligned\n\nFE: track dense cross-screen state, guardrails, and edge-case transitions',
     },
     deps: {
-      1: 'Low dependency risk. Internal-only change with no external coordination',
-      2: 'One lightweight dependency or coordination point',
-      3: 'A few dependencies that need sequencing',
-      4: 'Several dependencies with fragile integration points',
-      5: 'Dependency-heavy. Multiple systems/teams must align for a safe release',
+      1: 'Low dependency surface\n\nBE: internal-only change, no external service contract update\n\nFE: UI-only change with current API responses',
+      2: 'Medium dependency surface\n\nBE: coordinate one or two downstream services or queues\n\nFE: update UI flow to align with one backend contract adjustment',
+      3: 'High dependency surface\n\nBE: sequence multiple systems/teams and integration checkpoints\n\nFE: release requires backend, design, and QA alignment across feature boundaries',
     },
     risk: {
-      1: 'Low impact if wrong. Cosmetic or non-critical behavior',
-      2: 'Limited impact, easy rollback',
-      3: 'Moderate user impact if regression occurs',
-      4: 'High impact and harder rollback path',
-      5: 'Highest impact. Regressions could break core user flows or critical production behavior',
+      1: 'Low risk / impact of failure\n\nBE: non-critical endpoint, easy rollback, limited blast radius\n\nFE: cosmetic or minor workflow polish with low user impact',
+      2: 'Medium risk / impact of failure\n\nBE: user-visible service behavior where regression impacts part of the journey\n\nFE: key workflow step where a bug causes noticeable friction',
+      3: 'High risk / impact of failure\n\nBE: production-critical path with outage/data integrity exposure if wrong\n\nFE: core journey breakage that blocks task completion and complicates rollback',
     },
   };
 
@@ -690,6 +679,28 @@ function setupCalcButtons() {
       });
     });
   });
+}
+
+function setCalcDetailsExpanded(expanded) {
+  const calculator = document.querySelector('.calculator');
+  const details = document.getElementById('calc-details');
+  const toggleBtn = document.getElementById('btn-toggle-calc-details');
+  if (!calculator || !details || !toggleBtn) return;
+
+  if (expanded) {
+    details.removeAttribute('hidden');
+    calculator.classList.add('calc-details-open');
+    calculator.classList.remove('calc-details-hidden');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.textContent = 'Hide calculations';
+    return;
+  }
+
+  details.setAttribute('hidden', '');
+  calculator.classList.remove('calc-details-open');
+  calculator.classList.add('calc-details-hidden');
+  toggleBtn.setAttribute('aria-expanded', 'false');
+  toggleBtn.textContent = 'View calculations';
 }
 
 // ---- UI Rendering ------------------------------------------
@@ -901,6 +912,7 @@ async function enterGame(sessionId) {
   showView('loading');
   try {
     showView('game');
+    setCalcDetailsExpanded(false);
     subscribeToSession(sessionId);
     renderVoteCards(null);
     updateCalcOutput();
@@ -924,6 +936,7 @@ async function enterGame(sessionId) {
 
 function leaveGame() {
   unsubscribeFromSession();
+  setCalcDetailsExpanded(false);
   state.sessionId = null;
   state.sessionData = null;
   state.currentVote = null;
@@ -1060,12 +1073,18 @@ function setupEventListeners() {
 
   // ---- Calculator ----
   setupCalcButtons();
+  setCalcDetailsExpanded(false);
 
   document.getElementById('btn-vote-calc').addEventListener('click', () => {
     const sp = document.getElementById('btn-vote-calc').dataset.sp;
     if (!sp) return;
     castVote(sp);
     showToast(`Voted ${sp} SP (from smart calculator)`, 'success');
+  });
+
+  document.getElementById('btn-toggle-calc-details').addEventListener('click', () => {
+    const isExpanded = document.getElementById('btn-toggle-calc-details').getAttribute('aria-expanded') === 'true';
+    setCalcDetailsExpanded(!isExpanded);
   });
 
   // ---- Story Edit ----

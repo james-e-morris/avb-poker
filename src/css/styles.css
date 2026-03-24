@@ -666,11 +666,16 @@ select {
 /* ---- Calculator ------------------------------------------ */
 .calculator {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: stretch;
   flex: 1;
   padding: 14px 16px;
   gap: 12px;
+  transition: grid-template-columns 0.18s ease;
+}
+
+.calculator.calc-details-open {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 .calc-inputs {
   background: var(--surface-2);
@@ -721,7 +726,7 @@ select {
 
 .scale-buttons {
   display: grid;
-  grid-template-columns: repeat(5, minmax(40px, 1fr));
+  grid-template-columns: repeat(3, minmax(40px, 1fr));
   gap: 8px;
   overflow: visible;
 }
@@ -799,6 +804,7 @@ select {
 
 /* Size scale gets a distinct visual language from the other factor buttons. */
 .scale-buttons.size-scale {
+  grid-template-columns: repeat(5, minmax(40px, 1fr));
   gap: 10px;
   padding: 8px;
   border-radius: 12px;
@@ -883,20 +889,31 @@ select {
   flex-direction: column;
   justify-content: flex-end;
   gap: 14px;
+  min-width: 250px;
 }
-.factor-breakdown {
+
+#calc-details {
   order: 1;
 }
-.calc-result-grid {
+
+.calc-output > .calc-result-grid {
   order: 2;
 }
-.calc-output .btn {
+
+#btn-vote-calc {
   order: 3;
+}
+
+#btn-toggle-calc-details {
+  order: 4;
 }
 .calc-result-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
+}
+.calc-result-grid-advanced {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .calc-result-item {
   display: flex;
@@ -937,10 +954,29 @@ select {
   font-size: 0.68rem;
   color: var(--text-muted);
 }
-.calc-output .btn {
+#btn-vote-calc {
   align-self: center;
-  min-width: 220px;
+  min-width: 200px;
   margin-top: 8px;
+}
+
+.btn-calc-toggle {
+  align-self: center;
+  min-width: 0;
+  margin-top: -6px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  line-height: 1.1;
+}
+
+.calc-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calc-details[hidden] {
+  display: none;
 }
 
 .factor-breakdown {
@@ -1254,16 +1290,21 @@ select {
     font-size: 0.75rem;
   }
   .scale-buttons {
-    grid-template-columns: repeat(5, minmax(36px, 1fr));
+    grid-template-columns: repeat(3, minmax(36px, 1fr));
     gap: 6px;
+  }
+  .scale-buttons.size-scale {
+    grid-template-columns: repeat(5, minmax(36px, 1fr));
   }
   .scale-btn {
     padding: 8px 4px;
     font-size: 0.84rem;
   }
   .calc-result-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+  }
+  .calc-result-grid-advanced {
+    grid-template-columns: 1fr;
   }
   .calc-result-item {
     padding: 10px 6px;
@@ -1287,7 +1328,7 @@ select {
   .factor-name {
     font-size: 0.65rem;
   }
-  .calc-output .btn {
+  #btn-vote-calc {
     min-width: 180px;
   }
 }

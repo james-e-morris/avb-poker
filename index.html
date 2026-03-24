@@ -111,8 +111,8 @@
             <div class="formula-item">
               <span class="formula-label">B. Basis</span>
               <span class="formula-desc"
-                >Size options are 1, 2, 3, 5, 8. For every other factor: score 1→x1, 2→x1.025, 3→x1.05, 4→x1.075,
-                5→x1.1. Top-end example: 8 x 1.1 x 1.1 x 1.1 x 1.1 x 1.1 = 12.88, rounded to 13.</span
+                >Size options are 1, 2, 3, 5, 8. Every multiplier field uses Low/Medium/High where Low→x1.0,
+                Medium→x1.05, High→x1.1. Top-end example: 8 x 1.1 x 1.1 x 1.1 x 1.1 x 1.1 = 12.88, rounded to 13.</span
               >
             </div>
             <div class="formula-item">
@@ -135,9 +135,18 @@
             <div class="formula-item">
               <span class="formula-label">E. Multiplier range examples</span>
               <span class="formula-desc"
-                >Bottom range (score 1 => x1.0): BE low-complexity rename/mapper change, FE low-impact styling/text
-                update. Top range (score 5 => x1.1): BE high-risk multi-branch integration workflow, FE high-complexity
-                dynamic flow with retries/error states and cross-team dependencies.</span
+                >Complexity (Low/Med/High): BE add one mapper branch / refactor one handler / coordinate multi-branch
+                orchestration. FE copy/style tune / new component with conditional states / multi-state workflow with
+                validation, retries, and fallbacks. Uncertainty (Low/Med/High): BE clear acceptance on existing API /
+                some contract unknowns / upstream behavior still undefined. FE clear mock + acceptance / partial UX
+                unknowns / behavior still exploratory. Cognitive Load (Low/Med/High): BE one-module edit / a few modules
+                and decisions / many cross-module flows held in sync. FE isolated screen tweak / moderate state
+                coordination / dense cross-screen state and edge-case coordination. Dependencies (Low/Med/High): BE
+                internal-only change / one or two service touchpoints / multiple services or teams synchronized. FE
+                local UI only / one API contract update / cross-team rollout with backend + design coordination. Risk /
+                Impact of Failure (Low/Med/High): BE low-impact non-critical path / moderate user-facing risk /
+                production-critical failure risk. FE cosmetic or low-risk UI / noticeable workflow disruption /
+                high-impact journey breakage with rollback complexity.</span
               >
             </div>
           </div>
@@ -192,7 +201,7 @@
 
       <!-- Voting Area -->
       <main id="voting-area" class="game-main">
-        <div class="calculator">
+        <div class="calculator calc-details-hidden">
           <div class="calc-inputs">
             <div class="calc-row">
               <div class="calc-field">
@@ -212,47 +221,37 @@
               <div class="calc-field">
                 <label
                   >Technical Complexity<span class="calc-hint"
-                    >1=Simple CRUD · 5=High architectural complexity</span
+                    >Low / Medium / High architectural complexity</span
                   ></label
                 >
                 <div class="scale-buttons" data-metric="complexity" role="radiogroup" aria-label="Technical Complexity">
-                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
-                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
-                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
-                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
             </div>
 
             <div class="calc-row">
               <div class="calc-field">
-                <label
-                  >Uncertainty / Ambiguity<span class="calc-hint">1=Clear criteria · 5=Highly ambiguous</span></label
-                >
+                <label>Uncertainty / Ambiguity<span class="calc-hint">Low / Medium / High ambiguity</span></label>
                 <div
                   class="scale-buttons"
                   data-metric="uncertainty"
                   role="radiogroup"
                   aria-label="Uncertainty or Ambiguity"
                 >
-                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
-                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
-                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
-                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
               <div class="calc-field">
-                <label
-                  >Cognitive Load<span class="calc-hint">1=Straightforward · 5=Complex multi-domain logic</span></label
-                >
+                <label>Cognitive Load<span class="calc-hint">Low / Medium / High mental load</span></label>
                 <div class="scale-buttons" data-metric="cognitive" role="radiogroup" aria-label="Cognitive Load">
-                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
-                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
-                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
-                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
             </div>
@@ -261,7 +260,7 @@
               <div class="calc-field">
                 <label
                   >Integration / Dependencies<span class="calc-hint"
-                    >1=No external systems · 5=Heavy cross-system impact</span
+                    >Low / Medium / High dependency complexity</span
                   ></label
                 >
                 <div
@@ -270,25 +269,21 @@
                   role="radiogroup"
                   aria-label="Integration and Dependencies"
                 >
-                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
-                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
-                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
-                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
               <div class="calc-field">
                 <label
-                  >Risk / Failure Impact<span class="calc-hint"
-                    >1=Low consequence · 5=Outage/data/legal exposure</span
+                  >Risk / Impact of Failure<span class="calc-hint"
+                    >Low / Medium / High impact if this fails</span
                   ></label
                 >
-                <div class="scale-buttons" data-metric="risk" role="radiogroup" aria-label="Risk and Failure Impact">
-                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">1</button>
-                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">2</button>
-                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">3</button>
-                  <button type="button" class="scale-btn" data-value="4" aria-pressed="false">4</button>
-                  <button type="button" class="scale-btn" data-value="5" aria-pressed="false">5</button>
+                <div class="scale-buttons" data-metric="risk" role="radiogroup" aria-label="Risk and Impact of Failure">
+                  <button type="button" class="scale-btn is-selected" data-value="1" aria-pressed="true">Low</button>
+                  <button type="button" class="scale-btn" data-value="2" aria-pressed="false">Medium</button>
+                  <button type="button" class="scale-btn" data-value="3" aria-pressed="false">High</button>
                 </div>
               </div>
             </div>
@@ -296,49 +291,61 @@
 
           <div class="calc-output">
             <div class="calc-result-grid">
-              <div class="calc-result-item">
-                <span class="result-label">Rounded Score</span>
-                <span class="result-value" id="out-bes">1</span>
-                <span class="result-range">Range 1-13</span>
-              </div>
-              <div class="calc-result-item">
-                <span class="result-label">Multiplication Formula</span>
-                <code class="result-value formula-value" id="out-formula">1 x 1 x 1 x 1 x 1 x 1</code>
-                <span class="result-range" id="out-formula-total">= 1 raw -> 1 rounded</span>
-              </div>
               <div class="calc-result-item highlight">
                 <span class="result-label">Suggested SP</span>
                 <span class="result-value sp-big" id="out-sp">1</span>
                 <span class="result-range" id="out-sp-basis">Rounded score 1 maps to 1 SP</span>
               </div>
             </div>
-            <div class="factor-breakdown" aria-label="Multiplicative factor inputs">
-              <div class="factor-chip">
-                <span class="factor-name">Size</span>
-                <span class="factor-math" id="out-factor-size">1 (base)</span>
+            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote Suggested SP (1)</button>
+            <button
+              id="btn-toggle-calc-details"
+              class="btn btn-ghost btn-sm btn-calc-toggle"
+              aria-expanded="false"
+              aria-controls="calc-details"
+            >
+              View calculations
+            </button>
+            <div id="calc-details" class="calc-details" hidden>
+              <div class="calc-result-grid calc-result-grid-advanced">
+                <div class="calc-result-item">
+                  <span class="result-label">Rounded Score</span>
+                  <span class="result-value" id="out-bes">1</span>
+                  <span class="result-range">Range 1-13</span>
+                </div>
+                <div class="calc-result-item">
+                  <span class="result-label">Multiplication Formula</span>
+                  <code class="result-value formula-value" id="out-formula">1 x 1 x 1 x 1 x 1 x 1</code>
+                  <span class="result-range" id="out-formula-total">= 1 raw -> 1 rounded</span>
+                </div>
               </div>
-              <div class="factor-chip">
-                <span class="factor-name">Complexity</span>
-                <span class="factor-math" id="out-factor-complexity">1 => x1</span>
-              </div>
-              <div class="factor-chip">
-                <span class="factor-name">Uncertainty</span>
-                <span class="factor-math" id="out-factor-uncertainty">1 => x1</span>
-              </div>
-              <div class="factor-chip">
-                <span class="factor-name">Cognitive Load</span>
-                <span class="factor-math" id="out-factor-cognitive">1 => x1</span>
-              </div>
-              <div class="factor-chip">
-                <span class="factor-name">Dependencies</span>
-                <span class="factor-math" id="out-factor-deps">1 => x1</span>
-              </div>
-              <div class="factor-chip">
-                <span class="factor-name">Risk</span>
-                <span class="factor-math" id="out-factor-risk">1 => x1</span>
+              <div class="factor-breakdown" aria-label="Multiplicative factor inputs">
+                <div class="factor-chip">
+                  <span class="factor-name">Size</span>
+                  <span class="factor-math" id="out-factor-size">1 (base)</span>
+                </div>
+                <div class="factor-chip">
+                  <span class="factor-name">Complexity</span>
+                  <span class="factor-math" id="out-factor-complexity">1 => x1</span>
+                </div>
+                <div class="factor-chip">
+                  <span class="factor-name">Uncertainty</span>
+                  <span class="factor-math" id="out-factor-uncertainty">1 => x1</span>
+                </div>
+                <div class="factor-chip">
+                  <span class="factor-name">Cognitive Load</span>
+                  <span class="factor-math" id="out-factor-cognitive">1 => x1</span>
+                </div>
+                <div class="factor-chip">
+                  <span class="factor-name">Dependencies</span>
+                  <span class="factor-math" id="out-factor-deps">1 => x1</span>
+                </div>
+                <div class="factor-chip">
+                  <span class="factor-name">Risk</span>
+                  <span class="factor-math" id="out-factor-risk">1 => x1</span>
+                </div>
               </div>
             </div>
-            <button id="btn-vote-calc" class="btn btn-primary" data-sp="1">Vote Suggested SP (1)</button>
           </div>
         </div>
 

@@ -15,10 +15,8 @@ function mapToFibonacci(roundedScore) {
 function scoreToMultiplier(score) {
   const multiplierMap = {
     1: 1,
-    2: 1.025,
-    3: 1.05,
-    4: 1.075,
-    5: 1.1,
+    2: 1.05,
+    3: 1.1,
   };
   return multiplierMap[score] || 1;
 }

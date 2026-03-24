@@ -41,36 +41,36 @@ describe('Story Point Calculation', () => {
     });
 
     test('handles maximum multipliers', () => {
-      const result = calculateSP(13, 5, 5, 5, 5, 5);
-      const expected = 13 * 1.2 * 1.2 * 1.2 * 1.2 * 1.2;
+      const result = calculateSP(13, 3, 3, 3, 3, 3);
+      const expected = 13 * 1.1 * 1.1 * 1.1 * 1.1 * 1.1;
       expect(result.rawScore).toBeCloseTo(expected, 5);
       expect(result.sp).toBeGreaterThan(0);
     });
 
     test('returns correct multiplier breakdown', () => {
-      const result = calculateSP(3, 3, 4, 2, 1, 5);
+      const result = calculateSP(3, 3, 2, 2, 1, 3);
       expect(result.multipliers.complexity).toBe(1.1);
-      expect(result.multipliers.uncertainty).toBe(1.15);
+      expect(result.multipliers.uncertainty).toBe(1.05);
       expect(result.multipliers.cognitive).toBe(1.05);
       expect(result.multipliers.deps).toBe(1);
-      expect(result.multipliers.risk).toBe(1.2);
+      expect(result.multipliers.risk).toBe(1.1);
     });
 
     test('rawScore matches calculation', () => {
       const size = 8;
       const complexity = 3;
       const uncertainty = 2;
-      const cognitive = 4;
+      const cognitive = 3;
       const deps = 1;
       const risk = 2;
 
       const result = calculateSP(size, complexity, uncertainty, cognitive, deps, risk);
-      const manualCalc = size * 1.1 * 1.05 * 1.15 * 1 * 1.05;
+      const manualCalc = size * 1.1 * 1.05 * 1.1 * 1 * 1.05;
       expect(result.rawScore).toBeCloseTo(manualCalc, 5);
     });
 
     test('roundedScore is integer', () => {
-      const result = calculateSP(5, 2, 3, 1, 2, 4);
+      const result = calculateSP(5, 2, 3, 1, 2, 3);
       expect(Number.isInteger(result.roundedScore)).toBe(true);
     });
 

@@ -84,16 +84,37 @@ function summarizeVotes(participants) {
   };
 }
 
+function getConsensusFinalDecision(participants) {
+  const summary = summarizeVotes(participants || {});
+  if (!summary.isConsensus || summary.distinctNumericVotes === 0) return null;
+
+  const numericVote = summary.entries.map(([, p]) => parseFloat(p.vote)).find((v) => !isNaN(v));
+  if (numericVote === undefined) return null;
+  return formatCalcNumber(numericVote);
+}
+
+function hasFinalDecision(session) {
+  return session && session.finalDecision !== null && session.finalDecision !== undefined;
+}
+
+function canStartNewRound(session) {
+  if (!session || session.status !== 'revealed') return true;
+  return hasFinalDecision(session);
+}
+
 function buildRevealHistoryEntry(session) {
   const summary = summarizeVotes(session.participants || {});
+  const id = `r_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   return {
+    id,
     revealedAt: Date.now(),
     story: safeText(session.story) || 'Untitled story',
     avg: summary.avg,
     isConsensus: summary.isConsensus,
     distinctVotes: summary.distinctNumericVotes,
     nearest: summary.nearest,
+    finalDecision: session.finalDecision || null,
     votes: summary.entries.map(([uid, p]) => ({
       uid,
       name: (p.name || 'Anonymous').slice(0, 24),
@@ -104,7 +125,19 @@ function buildRevealHistoryEntry(session) {
 
 function appendRevealHistoryEntry(session) {
   const history = Array.isArray(session.resultsHistory) ? session.resultsHistory : [];
-  session.resultsHistory = [buildRevealHistoryEntry(session), ...history];
+  const entry = buildRevealHistoryEntry(session);
+  session.resultsHistory = [entry, ...history];
+  session.currentRevealId = entry.id;
+}
+
+function applyFinalDecisionToHistory(session, value) {
+  const history = Array.isArray(session.resultsHistory) ? session.resultsHistory : [];
+  if (!history.length) return;
+
+  const target = session.currentRevealId ? history.find((item) => item.id === session.currentRevealId) : history[0];
+  if (!target) return;
+
+  target.finalDecision = value || null;
 }
 
 function formatRevealTimestamp(timestamp) {
@@ -351,6 +384,8 @@ async function createSession(sessionName, userName) {
     status: 'voting',
     createdAt: Date.now(),
     expiresAt: Date.now() + roomTtlMs(),
+    finalDecision: null,
+    currentRevealId: null,
     resultsHistory: [],
     participants: {
       [userId]: {
@@ -444,6 +479,7 @@ async function revealVotes() {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (!session) return;
     if (session.status === 'revealed') return;
+    session.finalDecision = getConsensusFinalDecision(session.participants || {});
     appendRevealHistoryEntry(session);
     session.status = 'revealed';
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
@@ -452,10 +488,31 @@ async function revealVotes() {
     const session = getDemoSession(sessionId);
     if (session) {
       if (session.status === 'revealed') return;
+      session.finalDecision = getConsensusFinalDecision(session.participants || {});
       appendRevealHistoryEntry(session);
       session.status = 'revealed';
       saveDemoSession(sessionId, session);
     }
+  }
+}
+
+async function setFinalDecision(value) {
+  const { sessionId } = state;
+  if (!sessionId || !state.isModerator) return;
+
+  if (state.dbMode === 'ably') {
+    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
+    if (!session || session.status !== 'revealed') return;
+    session.finalDecision = value || null;
+    applyFinalDecisionToHistory(session, value || null);
+    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
+    await ablyPublishState(channel, session);
+  } else {
+    const session = getDemoSession(sessionId);
+    if (!session || session.status !== 'revealed') return;
+    session.finalDecision = value || null;
+    applyFinalDecisionToHistory(session, value || null);
+    saveDemoSession(sessionId, session);
   }
 }
 
@@ -467,8 +524,14 @@ async function newRound(roundName) {
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (session) {
+      if (!canStartNewRound(session)) {
+        showToast('Choose a Final Decision before starting the next round', 'error');
+        return;
+      }
       session.status = 'voting';
       session.story = cleanRoundName;
+      session.finalDecision = null;
+      session.currentRevealId = null;
       Object.keys(session.participants || {}).forEach((uid) => {
         session.participants[uid].vote = null;
         session.participants[uid].hasVoted = false;
@@ -479,8 +542,14 @@ async function newRound(roundName) {
   } else {
     const session = getDemoSession(sessionId);
     if (session) {
+      if (!canStartNewRound(session)) {
+        showToast('Choose a Final Decision before starting the next round', 'error');
+        return;
+      }
       session.status = 'voting';
       session.story = cleanRoundName;
+      session.finalDecision = null;
+      session.currentRevealId = null;
       Object.keys(session.participants || {}).forEach((uid) => {
         session.participants[uid].vote = null;
         session.participants[uid].hasVoted = false;
@@ -607,7 +676,7 @@ function handleSessionData(session) {
 
   if (nowRevealed) {
     renderVoteCards(state.currentVote); // show cards disabled
-    showResults(participants);
+    showResults(session);
   } else {
     if (justStartedNewRound) {
       resetCalculatorSelectionsToDefault();
@@ -964,7 +1033,30 @@ function updateStatusBar(participants, status) {
   }
 }
 
-function showResults(participants) {
+function renderFinalDecisionPicker(currentDecision, canEdit) {
+  const pickerEl = document.getElementById('results-final-picker');
+  if (!pickerEl) return;
+
+  pickerEl.innerHTML = '';
+  pickerEl.hidden = !canEdit;
+  if (!canEdit) return;
+
+  const cardValues = FIBONACCI_CARDS.filter((v) => !isNaN(parseFloat(v)));
+  cardValues.forEach((value) => {
+    const btn = el('button', `decision-chip${String(currentDecision) === String(value) ? ' selected' : ''}`, value);
+    btn.type = 'button';
+    btn.addEventListener('click', () => setFinalDecision(value));
+    pickerEl.appendChild(btn);
+  });
+
+  const clearBtn = el('button', 'decision-chip clear-chip', 'Clear');
+  clearBtn.type = 'button';
+  clearBtn.addEventListener('click', () => setFinalDecision(null));
+  pickerEl.appendChild(clearBtn);
+}
+
+function showResults(session) {
+  const participants = session.participants || {};
   const area = document.getElementById('results-area');
   area.removeAttribute('hidden');
 
@@ -977,23 +1069,50 @@ function showResults(participants) {
 
   document.getElementById('results-avg').textContent = avg !== null ? avg.toFixed(1) : '—';
   document.getElementById('results-consensus').textContent =
-    summary.distinctNumericVotes === 0 ? '—' : isConsensus ? '✅ Yes!' : `❌ No (${summary.distinctNumericVotes} values)`;
+    summary.distinctNumericVotes === 0 ? '—' : isConsensus ? '✅' : `❌ (${summary.distinctNumericVotes} values)`;
   document.getElementById('results-nearest').textContent = avg !== null ? `${summary.nearest} SP` : '—';
+
+  const hasFinalDecision = session.finalDecision !== null && session.finalDecision !== undefined;
+  const finalDecision = hasFinalDecision ? String(session.finalDecision) : null;
+  const finalValueEl = document.getElementById('results-final-value');
+  const finalHintEl = document.getElementById('results-final-hint');
+  const newRoundBtn = document.getElementById('btn-new-round');
+  const revealBtn = document.getElementById('btn-reveal');
+  if (finalValueEl) {
+    finalValueEl.textContent = hasFinalDecision ? `${finalDecision} SP` : 'Not decided';
+    finalValueEl.classList.toggle('is-empty', !hasFinalDecision);
+  }
+  if (finalHintEl) {
+    finalHintEl.textContent = hasFinalDecision
+      ? 'Moderator final decision applied.'
+      : state.isModerator
+        ? 'Select the final team decision for this story.'
+        : 'Waiting for moderator final decision.';
+  }
+  renderFinalDecisionPicker(finalDecision, state.isModerator && session.status === 'revealed');
+
+  if (newRoundBtn) {
+    const canStart = canStartNewRound(session);
+    newRoundBtn.disabled = !canStart;
+    newRoundBtn.title = canStart ? '' : 'Choose a Final Decision first';
+  }
+  if (revealBtn) {
+    revealBtn.hidden = true;
+  }
 
   // Vote chips
   const votesEl = document.getElementById('results-votes');
   votesEl.innerHTML = '';
-  entries
-    .forEach(([, p]) => {
-      const chip = el('div', 'result-vote-chip');
-      const name = el('span', 'rv-name');
-      name.textContent = (p.name || 'Anonymous').slice(0, 16);
-      const vv = el('span', 'rv-val');
-      vv.textContent = p.hasVoted ? (p.vote ?? '—') : '✗';
-      chip.appendChild(name);
-      chip.appendChild(vv);
-      votesEl.appendChild(chip);
-    });
+  entries.forEach(([, p]) => {
+    const chip = el('div', 'result-vote-chip');
+    const name = el('span', 'rv-name');
+    name.textContent = (p.name || 'Anonymous').slice(0, 16);
+    const vv = el('span', 'rv-val');
+    vv.textContent = p.hasVoted ? (p.vote ?? '—') : '✗';
+    chip.appendChild(name);
+    chip.appendChild(vv);
+    votesEl.appendChild(chip);
+  });
 
   document.getElementById('footer-voting').hidden = true;
   document.getElementById('footer-revealed').hidden = false;
@@ -1029,18 +1148,22 @@ function renderSessionHistory(historyItems) {
 
     const avg = item.avg === null || item.avg === undefined ? '—' : Number(item.avg).toFixed(1);
     const nearest = item.nearest === null || item.nearest === undefined ? '—' : `${item.nearest} SP`;
+    const hasFinal = item.finalDecision !== null && item.finalDecision !== undefined;
+    const final = hasFinal ? `${item.finalDecision} SP` : item.isConsensus ? nearest : 'Pending';
     const distinctValues = Number(item.distinctVotes || 0);
     const consensus = distinctValues === 0 ? '—' : item.isConsensus ? 'Yes' : `No (${distinctValues} values)`;
 
     title.appendChild(el('span', 'history-entry-story', item.story || 'Untitled story'));
     title.appendChild(el('span', 'history-entry-sep', ' - '));
-    title.appendChild(el('span', 'history-entry-sp', nearest));
+    title.appendChild(el('span', 'history-entry-sp', final));
 
-    const meta = el('div', 'history-entry-meta', `${time.textContent} • Avg ${avg} • Consensus ${consensus} • ${nearest}`);
+    const meta = el(
+      'div',
+      'history-entry-meta',
+      `${time.textContent} • Avg ${avg} • Consensus ${consensus} • Final ${final}`
+    );
 
-    const voteText = (item.votes || [])
-      .map((vote) => `${vote.name || 'Anonymous'}: ${vote.vote ?? '—'}`)
-      .join(' | ');
+    const voteText = (item.votes || []).map((vote) => `${vote.name || 'Anonymous'}: ${vote.vote ?? '—'}`).join(' | ');
     const votes = el('div', 'history-entry-votes', voteText || 'No votes');
 
     row.appendChild(title);
@@ -1055,6 +1178,12 @@ function hideResults() {
   document.getElementById('voting-area').classList.remove('voting-disabled');
   document.getElementById('footer-voting').hidden = false;
   document.getElementById('footer-revealed').hidden = true;
+
+  const pickerEl = document.getElementById('results-final-picker');
+  if (pickerEl) {
+    pickerEl.innerHTML = '';
+    pickerEl.hidden = true;
+  }
 }
 
 function updateFooter(participants, status) {

@@ -1379,6 +1379,16 @@ function setupEventListeners() {
   document.getElementById('btn-toggle-history-float').addEventListener('click', toggleHistorySidebar);
   document.getElementById('btn-collapse-history').addEventListener('click', () => setHistorySidebarExpanded(false));
 
+  document.getElementById('view-game').addEventListener('click', (e) => {
+    const gameView = document.getElementById('view-game');
+    if (!gameView.classList.contains('history-open')) return;
+    const sidebar = document.getElementById('history-sidebar');
+    const fab = document.getElementById('btn-toggle-history-float');
+    if (!sidebar.contains(e.target) && !fab.contains(e.target)) {
+      setHistorySidebarExpanded(false);
+    }
+  });
+
   // ---- Calculator ----
   setupCalcButtons();
   syncCalcLabelWidth();

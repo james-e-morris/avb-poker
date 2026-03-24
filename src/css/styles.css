@@ -680,6 +680,8 @@ select {
   flex: 0 0 auto;
   padding: 14px 16px;
   gap: 12px;
+  position: relative;
+  z-index: 20;
   transition: grid-template-columns 0.18s ease;
 }
 
@@ -716,7 +718,7 @@ select {
 
 .calc-field:hover,
 .calc-field:focus-within {
-  z-index: 20;
+  z-index: 1200;
 }
 .calc-field label {
   font-size: 0.8rem;
@@ -748,6 +750,7 @@ select {
 }
 .scale-btn {
   position: relative;
+  z-index: 1;
   border: 1.5px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -762,6 +765,11 @@ select {
     background 0.15s,
     color 0.15s,
     transform 0.12s;
+}
+
+.scale-btn[data-popover]:hover,
+.scale-btn[data-popover]:focus-visible {
+  z-index: 1250;
 }
 
 .scale-btn[data-popover]::after {
@@ -784,7 +792,7 @@ select {
   box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
   opacity: 0;
   pointer-events: none;
-  z-index: 40;
+  z-index: 1300;
   transition:
     opacity 0.16s ease,
     transform 0.16s ease;
@@ -1066,6 +1074,8 @@ select {
 }
 
 .fibonacci-section {
+  position: relative;
+  z-index: 1;
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }

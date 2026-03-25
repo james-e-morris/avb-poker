@@ -28,8 +28,10 @@
   --z-calculator: 20;
   --z-history-fab: 30;
   --z-examples-fab: 31;
+  --z-rovo-prompt-fab: 32;
   --z-history-sidebar: 40;
   --z-examples-sidebar: 41;
+  --z-rovo-prompt-sidebar: 42;
   --z-demo-badge: 50;
   --z-modal: 100;
   --z-toast: 200;
@@ -1340,6 +1342,14 @@ select {
   box-shadow: var(--shadow);
 }
 
+.rovo-prompt-fab {
+  position: fixed;
+  top: 102px;
+  right: 12px;
+  z-index: var(--z-rovo-prompt-fab);
+  box-shadow: var(--shadow);
+}
+
 .history-sidebar.is-collapsed {
   transform: translateX(-102%);
 }
@@ -1395,6 +1405,28 @@ select {
   transform: translateX(102%);
 }
 
+.rovo-prompt-sidebar {
+  position: fixed;
+  top: 64px;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 88vw);
+  padding: 12px;
+  border-left: 1.5px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  transform: translateX(0);
+  transition: transform 0.18s ease;
+  z-index: var(--z-rovo-prompt-sidebar);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rovo-prompt-sidebar.is-collapsed {
+  transform: translateX(102%);
+}
+
 .examples-sidebar-head {
   display: flex;
   align-items: center;
@@ -1415,6 +1447,56 @@ select {
 .examples-sidebar-subtitle {
   color: var(--text-muted);
   font-size: 0.75rem;
+}
+
+.rovo-prompt-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rovo-prompt-sidebar-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.rovo-prompt-collapse-btn {
+  font-size: 1rem;
+  padding: 4px 8px;
+}
+
+.rovo-prompt-sidebar-subtitle {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.rovo-prompt-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.rovo-prompt-text {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  resize: none;
+  min-height: 120px;
+}
+
+.rovo-prompt-text:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
 }
 
 .examples-list {
@@ -1544,12 +1626,22 @@ select {
     right: 8px;
   }
 
+  .rovo-prompt-fab {
+    top: 100px;
+    right: 8px;
+  }
+
   .history-sidebar {
     top: 58px;
     width: min(300px, 90vw);
   }
 
   .examples-sidebar {
+    top: 58px;
+    width: min(320px, 92vw);
+  }
+
+  .rovo-prompt-sidebar {
     top: 58px;
     width: min(320px, 92vw);
   }

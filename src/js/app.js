@@ -295,6 +295,24 @@ function toggleExamplesSidebar() {
   setExamplesSidebarExpanded(!gameView.classList.contains('examples-open'));
 }
 
+function setRovoPromptSidebarExpanded(expanded) {
+  const gameView = document.getElementById('view-game');
+  const sidebar = document.getElementById('rovo-prompt-sidebar');
+  const openBtn = document.getElementById('btn-toggle-rovo-prompt-float');
+  if (!gameView || !sidebar || !openBtn) return;
+
+  gameView.classList.toggle('rovo-prompt-open', !!expanded);
+  sidebar.classList.toggle('is-collapsed', !expanded);
+  openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  openBtn.hidden = !!expanded;
+}
+
+function toggleRovoPromptSidebar() {
+  const gameView = document.getElementById('view-game');
+  if (!gameView) return;
+  setRovoPromptSidebarExpanded(!gameView.classList.contains('rovo-prompt-open'));
+}
+
 function openStoryModal() {
   const modal = document.getElementById('modal-story');
   const storyInput = document.getElementById('story-input');
@@ -1746,6 +1764,26 @@ function setupEventListeners() {
   document.getElementById('btn-collapse-history').addEventListener('click', () => setHistorySidebarExpanded(false));
   document.getElementById('btn-toggle-examples-float').addEventListener('click', toggleExamplesSidebar);
   document.getElementById('btn-collapse-examples').addEventListener('click', () => setExamplesSidebarExpanded(false));
+  document.getElementById('btn-toggle-rovo-prompt-float').addEventListener('click', toggleRovoPromptSidebar);
+  document.getElementById('btn-collapse-rovo-prompt').addEventListener('click', () => setRovoPromptSidebarExpanded(false));
+
+  // Copy Rovo prompt button
+  document.getElementById('btn-copy-rovo-prompt').addEventListener('click', () => {
+    const textArea = document.getElementById('rovo-prompt-text');
+    const copyBtn = document.getElementById('btn-copy-rovo-prompt');
+    if (textArea) {
+      textArea.select();
+      textArea.setSelectionRange(0, 99999); // For mobile devices
+      document.execCommand('copy');
+
+      // Provide visual feedback
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+      }, 2000);
+    }
+  });
 
   renderExamplesSidebar();
 
@@ -1753,12 +1791,15 @@ function setupEventListeners() {
     const gameView = document.getElementById('view-game');
     const historyOpen = gameView.classList.contains('history-open');
     const examplesOpen = gameView.classList.contains('examples-open');
-    if (!historyOpen && !examplesOpen) return;
+    const rovoPromptOpen = gameView.classList.contains('rovo-prompt-open');
+    if (!historyOpen && !examplesOpen && !rovoPromptOpen) return;
 
     const sidebar = document.getElementById('history-sidebar');
     const fab = document.getElementById('btn-toggle-history-float');
     const examplesSidebar = document.getElementById('examples-sidebar');
     const examplesFab = document.getElementById('btn-toggle-examples-float');
+    const rovoPromptSidebar = document.getElementById('rovo-prompt-sidebar');
+    const rovoPromptFab = document.getElementById('btn-toggle-rovo-prompt-float');
 
     if (historyOpen && !sidebar.contains(e.target) && !fab.contains(e.target)) {
       setHistorySidebarExpanded(false);
@@ -1766,6 +1807,10 @@ function setupEventListeners() {
 
     if (examplesOpen && !examplesSidebar.contains(e.target) && !examplesFab.contains(e.target)) {
       setExamplesSidebarExpanded(false);
+    }
+
+    if (rovoPromptOpen && !rovoPromptSidebar.contains(e.target) && !rovoPromptFab.contains(e.target)) {
+      setRovoPromptSidebarExpanded(false);
     }
   });
 

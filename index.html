@@ -187,6 +187,15 @@
         Examples
       </button>
 
+      <button
+        id="btn-toggle-rovo-prompt-float"
+        class="btn btn-ghost btn-sm rovo-prompt-fab"
+        aria-expanded="false"
+        aria-controls="rovo-prompt-sidebar"
+      >
+        AI Prompt
+      </button>
+
       <aside id="history-sidebar" class="history-sidebar is-collapsed" aria-labelledby="session-history-heading">
         <div class="history-sidebar-head">
           <h3 id="session-history-heading" class="history-sidebar-title">History</h3>
@@ -203,6 +212,64 @@
         </div>
         <p class="examples-sidebar-subtitle">Click an example to apply it.</p>
         <div id="examples-list" class="examples-list" aria-live="polite"></div>
+      </aside>
+
+      <aside
+        id="rovo-prompt-sidebar"
+        class="rovo-prompt-sidebar is-collapsed"
+        aria-labelledby="rovo-prompt-sidebar-heading"
+      >
+        <div class="rovo-prompt-sidebar-head">
+          <h3 id="rovo-prompt-sidebar-heading" class="rovo-prompt-sidebar-title">AI Prompt</h3>
+          <button id="btn-collapse-rovo-prompt" class="icon-btn rovo-prompt-collapse-btn" title="Collapse AI Prompt">
+            →
+          </button>
+        </div>
+        <p class="rovo-prompt-sidebar-subtitle">
+          Paste into Jira Rovo AI to estimate the story based on its description and acceptance criteria.
+        </p>
+        <div class="rovo-prompt-container">
+          <textarea id="rovo-prompt-text" class="rovo-prompt-text" readonly aria-label="AI prompt for Rovo">
+You are an expert Agile estimation assistant using the AVB Planning Poker methodology.
+
+Estimate Story Points by analyzing the ticket description and acceptance criteria against 6 factors:
+
+SIZE (base implementation effort):
+1=Tiny/cosmetic, 2=Small/localized, 3=Standard/contained, 5=Multi-step/multi-area, 8=Large/cross-cutting
+
+COMPLEXITY (technical challenge):
+Low=Straightforward patterns, existing solutions | Medium=Some novel patterns or edge cases | High=Novel architecture, tricky integration, performance concerns
+
+UNCERTAINTY (requirement clarity):
+Low=Clear requirements, defined scope | Medium=Some ambiguity or scope questions | High=Vague requirements, technical unknowns, unclear AC
+
+COGNITIVE LOAD (mental effort):
+Low=Routine implementation | Medium=Multiple systems/concepts required | High=Complex algorithms, state management, or many interacting parts
+
+DEPENDENCIES (external coordination):
+Low=Self-contained, no blockers | Medium=One external team or service | High=Multiple dependencies, cross-team coordination needed
+
+RISK (failure impact):
+Low=Isolated fix, easy rollback | Medium=Component-level impact, careful testing | High=System-critical, data risk, or security implications
+
+ANALYSIS: Review description and AC for each factor. Pick the dominant rating for each.
+
+OUTPUT FORMAT (strict):
+Size: [1|2|3|5|8]
+Complexity: [Low|Medium|High]
+Uncertainty: [Low|Medium|High]
+Cognitive Load: [Low|Medium|High]
+Dependencies: [Low|Medium|High]
+Risk: [Low|Medium|High]
+Suggested Story Points: [result]
+
+CALCULATION:
+Multipliers: Low=1.0, Medium=1.1, High=1.2
+Raw Score = Size × C-mult × U-mult × Cog-mult × Dep-mult × Risk-mult
+Map: <1.1→1, <2.1→2, <4→3, <6→5, <10→8, <17→13, <27→21, <44→34, <72→55, ≥72→89</textarea
+          >
+          <button id="btn-copy-rovo-prompt" class="btn btn-primary btn-sm">Copy</button>
+        </div>
       </aside>
 
       <!-- Participants -->

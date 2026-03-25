@@ -769,6 +769,13 @@ select {
   flex-shrink: 0;
   user-select: none;
   position: relative;
+  pointer-events: auto;
+}
+
+.vote-card-value {
+  display: inline-block;
+  line-height: 1;
+  pointer-events: auto;
 }
 .vote-card:hover:not(:disabled) {
   border-color: var(--primary);
@@ -800,6 +807,103 @@ select {
   transform: translateY(-8px);
   box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
 }
+
+.vote-card.selected[data-value='0'] {
+  animation: zero-vote-lethargic-spin 4.8s linear infinite;
+}
+
+/* One-shot gag for '?': panic wobble, duck behind, then settle. */
+.vote-card.selected[data-value='?'] .vote-card-value.question-panic-enter {
+  animation: question-panic-enter 1s linear 1 both;
+  animation-delay: var(--one-shot-delay, 0ms);
+}
+
+/* One-shot gag for '☕': pour into a mouth emoji, then refill and settle. */
+.vote-card.selected[data-value='☕'] .vote-card-value.coffee-pour-enter {
+  position: relative;
+  animation: coffee-pour-enter 1.3s cubic-bezier(0.22, 0.9, 0.2, 1) 1 both;
+  animation-delay: var(--one-shot-delay, 0ms);
+  transform-origin: 50% 80%;
+}
+
+/* Fun FX: high-point picks get a subtle shake + smoke accent. */
+.vote-card.selected[data-value='13'],
+.vote-card.selected[data-value='21'],
+.vote-card.selected[data-value='34'],
+.vote-card.selected[data-value='55'],
+.vote-card.selected[data-value='89'] {
+  animation: high-vote-shake 0.58s linear infinite;
+  box-shadow:
+    0 8px 20px rgba(124, 58, 237, 0.38),
+    0 0 0 1px rgba(248, 113, 113, 0.25),
+    0 0 16px rgba(248, 113, 113, 0.32);
+}
+
+.vote-card.selected[data-value='13'] {
+  animation-duration: 0.66s;
+}
+
+.vote-card.selected[data-value='21'] {
+  animation-duration: 0.52s;
+}
+
+.vote-card.selected[data-value='34'] {
+  animation-duration: 0.4s;
+}
+
+.vote-card.selected[data-value='55'] {
+  animation-duration: 0.3s;
+}
+
+.vote-card.selected[data-value='89'] {
+  animation-duration: 0.2s;
+}
+
+.vote-card.selected[data-value='13']::before,
+.vote-card.selected[data-value='21']::before,
+.vote-card.selected[data-value='34']::before,
+.vote-card.selected[data-value='55']::before,
+.vote-card.selected[data-value='89']::before,
+.vote-card.selected[data-value='13']::after,
+.vote-card.selected[data-value='21']::after,
+.vote-card.selected[data-value='34']::after,
+.vote-card.selected[data-value='55']::after,
+.vote-card.selected[data-value='89']::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  width: 26px;
+  height: 16px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(148, 163, 184, 0.2) 45%,
+    transparent 75%
+  );
+  filter: blur(1.2px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vote-card.selected[data-value='13']::before,
+.vote-card.selected[data-value='21']::before,
+.vote-card.selected[data-value='34']::before,
+.vote-card.selected[data-value='55']::before,
+.vote-card.selected[data-value='89']::before {
+  left: 5px;
+  animation: high-smoke-plume 1.9s ease-out infinite;
+}
+
+.vote-card.selected[data-value='13']::after,
+.vote-card.selected[data-value='21']::after,
+.vote-card.selected[data-value='34']::after,
+.vote-card.selected[data-value='55']::after,
+.vote-card.selected[data-value='89']::after {
+  right: 5px;
+  animation: high-smoke-plume 1.9s ease-out -0.95s infinite;
+}
+
 .vote-card:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -925,6 +1029,179 @@ select {
   border-color: var(--primary);
   background: var(--primary);
   color: #fff;
+}
+
+/* Fun FX: any selected High (non-size) factor gets mild shake + smoke. */
+.scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3'] {
+  animation: high-factor-shake 0.52s ease-in-out infinite;
+  box-shadow:
+    0 3px 12px rgba(248, 113, 113, 0.28),
+    inset 0 -1px 0 rgba(2, 6, 23, 0.2);
+}
+
+.scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3']::before,
+.scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3']::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  width: 22px;
+  height: 13px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(148, 163, 184, 0.18) 48%,
+    transparent 75%
+  );
+  filter: blur(1.1px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3']::before {
+  left: 2px;
+  animation: high-smoke-plume 1.7s ease-out infinite;
+}
+
+.scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3']::after {
+  right: 2px;
+  animation: high-smoke-plume 1.7s ease-out -0.85s infinite;
+}
+
+@keyframes high-factor-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-1px) rotate(-0.7deg);
+  }
+  50% {
+    transform: translateX(1px) rotate(0.7deg);
+  }
+  75% {
+    transform: translateX(-0.6px) rotate(-0.45deg);
+  }
+}
+
+@keyframes high-vote-shake {
+  0%,
+  100% {
+    transform: translateY(-8px) translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) translateX(-1.1px) rotate(-0.7deg);
+  }
+  50% {
+    transform: translateY(-8px) translateX(1.1px) rotate(0.7deg);
+  }
+  75% {
+    transform: translateY(-8px) translateX(-0.7px) rotate(-0.45deg);
+  }
+}
+
+@keyframes zero-vote-lethargic-spin {
+  0% {
+    transform: translateY(-8px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-8px) rotate(360deg);
+  }
+}
+
+@keyframes question-panic-enter {
+  0% {
+    transform: translate(0, 0);
+  }
+  12.5% {
+    transform: translate(-11px, -14px);
+  }
+  25% {
+    transform: translate(-13px, 0);
+  }
+  37.5% {
+    transform: translate(-11px, 14px);
+  }
+  50% {
+    transform: translate(0, -14px);
+  }
+  62.5% {
+    transform: translate(11px, 14px);
+  }
+  75% {
+    transform: translate(13px, 0);
+  }
+  87.5% {
+    transform: translate(11px, -14px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes coffee-pour-enter {
+  0% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(360deg);
+  }
+  85% {
+    transform: rotate(720deg);
+  }
+  91% {
+    transform: rotate(-3deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes high-smoke-plume {
+  0% {
+    transform: translateY(0) scale(0.65);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.34;
+  }
+  65% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(-18px) scale(1.35);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vote-card.selected[data-value='☕'] .vote-card-value.coffee-pour-enter,
+  .vote-card.selected[data-value='?'] .vote-card-value.question-panic-enter,
+  .vote-card.selected[data-value='0'],
+  .scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3'],
+  .vote-card.selected[data-value='13'],
+  .vote-card.selected[data-value='21'],
+  .vote-card.selected[data-value='34'],
+  .vote-card.selected[data-value='55'],
+  .vote-card.selected[data-value='89'] {
+    animation: none;
+  }
+
+  .scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3']::before,
+  .scale-buttons:not(.size-scale) .scale-btn.is-selected[data-value='3']::after,
+  .vote-card.selected[data-value='13']::before,
+  .vote-card.selected[data-value='21']::before,
+  .vote-card.selected[data-value='34']::before,
+  .vote-card.selected[data-value='55']::before,
+  .vote-card.selected[data-value='89']::before,
+  .vote-card.selected[data-value='13']::after,
+  .vote-card.selected[data-value='21']::after,
+  .vote-card.selected[data-value='34']::after,
+  .vote-card.selected[data-value='55']::after,
+  .vote-card.selected[data-value='89']::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .calc-popover {
@@ -1053,10 +1330,11 @@ select {
 }
 
 .size-scale .scale-btn.is-selected {
-  border-color: #0f172a;
+  border-color: var(--primary);
   background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
   color: #f8fafc;
   box-shadow:
+    0 0 0 2px rgba(124, 58, 237, 0.48),
     0 7px 14px rgba(15, 23, 42, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
@@ -1074,10 +1352,11 @@ select {
 }
 
 [data-theme='dark'] .size-scale .scale-btn.is-selected {
-  border-color: #7dd3fc;
+  border-color: var(--primary);
   background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
   color: #e0f2fe;
   box-shadow:
+    0 0 0 2px rgba(139, 92, 246, 0.58),
     0 8px 16px rgba(2, 132, 199, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }

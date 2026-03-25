@@ -28,6 +28,8 @@ const state = {
   },
   selectedExampleId: null,
   suggestedFinalDecision: null, // highlighted but not selected Final Pick
+  questionVotePanicStartedAt: 0,
+  coffeeVotePourStartedAt: 0,
 };
 
 const ADMIN_UID = 'u_4005191935_1395682239';
@@ -197,11 +199,7 @@ function safeText(val) {
 function getAblyClientId() {
   if (!ablyRealtime) return '';
 
-  const candidates = [
-    ablyRealtime.auth?.clientId,
-    ablyRealtime.clientId,
-    ablyRealtime.options?.clientId,
-  ];
+  const candidates = [ablyRealtime.auth?.clientId, ablyRealtime.clientId, ablyRealtime.options?.clientId];
 
   for (const value of candidates) {
     const cleaned = safeText(value);
@@ -232,7 +230,10 @@ function isAdminViewer() {
 }
 
 function extractJiraTickets(text) {
-  const raw = String(text || '').toUpperCase().match(/\b[A-Z][A-Z0-9]{1,9}-\d{1,7}\b/g) || [];
+  const raw =
+    String(text || '')
+      .toUpperCase()
+      .match(/\b[A-Z][A-Z0-9]{1,9}-\d{1,7}\b/g) || [];
   return [...new Set(raw)];
 }
 
@@ -409,7 +410,9 @@ async function fetchAdminHistoryFromAbly() {
           ...record,
           updatedAt: Number(record?.updatedAt || item.timestamp || Date.now()),
         };
-        const key = String(normalized.recordId || `${normalized.sessionId || 'unknown'}::${normalized.story || 'story'}`);
+        const key = String(
+          normalized.recordId || `${normalized.sessionId || 'unknown'}::${normalized.story || 'story'}`
+        );
         const prev = merged.get(key);
         if (!prev || Number(normalized.updatedAt || 0) >= Number(prev.updatedAt || 0)) {
           merged.set(key, normalized);
@@ -455,7 +458,8 @@ function normalizeAdminRecord(record) {
 }
 
 function formatAdminStatus(record) {
-  const hasFinal = record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
+  const hasFinal =
+    record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
   return hasFinal ? `${record.finalDecision} SP` : 'voting';
 }
 
@@ -1044,6 +1048,8 @@ async function castVote(value) {
   const { sessionId, userId } = state;
   if (!sessionId || !userId) return;
   state.currentVote = value;
+  state.questionVotePanicStartedAt = value === '?' ? Date.now() : 0;
+  state.coffeeVotePourStartedAt = value === '☕' ? Date.now() : 0;
 
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
@@ -1255,6 +1261,7 @@ function unsubscribeFromSession() {
 function handleSessionData(session) {
   if (!session) return;
 
+  const previousVote = state.currentVote;
   const previousStatus = state.sessionData ? state.sessionData.status : null;
   const wasRevealed = state.wasRevealed;
   const nowRevealed = session.status === 'revealed';
@@ -1294,8 +1301,27 @@ function handleSessionData(session) {
     const me = participants[state.userId];
     if (me && me.hasVoted) {
       state.currentVote = me.vote;
+      if (state.currentVote === '?') {
+        // Start one-shot animation when switching into '?' from a different vote.
+        if (previousVote !== '?') {
+          state.questionVotePanicStartedAt = Date.now();
+        }
+      } else {
+        state.questionVotePanicStartedAt = 0;
+      }
+
+      if (state.currentVote === '☕') {
+        // Start one-shot animation when switching into '☕' from a different vote.
+        if (previousVote !== '☕') {
+          state.coffeeVotePourStartedAt = Date.now();
+        }
+      } else {
+        state.coffeeVotePourStartedAt = 0;
+      }
     } else if (!nowRevealed) {
       state.currentVote = null;
+      state.questionVotePanicStartedAt = 0;
+      state.coffeeVotePourStartedAt = 0;
     }
     renderVoteCards(state.currentVote);
   }
@@ -1475,8 +1501,7 @@ function updateCalcOutput() {
   document.getElementById('out-bes').textContent = String(result.sp);
   document.getElementById('out-formula').textContent =
     `${size} x ${complexityMultiplier} x ${uncertaintyMultiplier} x ${cognitiveMultiplier} x ${dependencyMultiplier} x ${riskMultiplier}`;
-  document.getElementById('out-formula-total').textContent =
-    `= ${formattedRawScore} raw -> ${result.sp} score`;
+  document.getElementById('out-formula-total').textContent = `= ${formattedRawScore} raw -> ${result.sp} score`;
   document.getElementById('out-sp').textContent = result.sp;
 
   document.getElementById('out-factor-size').textContent = `${size} (base)`;
@@ -1810,6 +1835,16 @@ function renderVoteCards(selectedVote) {
   const container = document.getElementById('vote-cards');
   const isRevealed = state.sessionData && state.sessionData.status === 'revealed';
   const suggestedVote = String(document.getElementById('btn-vote-calc')?.dataset.sp || '');
+  const questionPanicDurationMs = 1000;
+  const coffeePourDurationMs = 1300;
+  const animatedVoteDurationsMs = {
+    0: 4800,
+    13: 660,
+    21: 520,
+    34: 400,
+    55: 300,
+    89: 200,
+  };
 
   container.innerHTML = '';
 
@@ -1820,10 +1855,58 @@ function renderVoteCards(selectedVote) {
       'button',
       `vote-card${isSelected ? ' selected' : ''}${showSuggestedPreview ? ' suggested-preview' : ''}`
     );
-    btn.textContent = val;
+    const label = el('span', 'vote-card-value', val);
+    btn.appendChild(label);
     btn.disabled = !!isRevealed;
     btn.dataset.value = val;
     if (isSelected) btn.setAttribute('aria-pressed', 'true');
+    if (isSelected && val === '?' && state.questionVotePanicStartedAt) {
+      const elapsedMs = Date.now() - state.questionVotePanicStartedAt;
+      if (elapsedMs < questionPanicDurationMs) {
+        // Only set class/delay once to avoid re-triggering animation on every render.
+        if (!label.classList.contains('question-panic-enter')) {
+          const delayMs = `-${Math.max(0, elapsedMs)}ms`;
+          label.classList.add('question-panic-enter');
+          label.style.setProperty('--one-shot-delay', delayMs);
+        }
+      } else {
+        state.questionVotePanicStartedAt = 0;
+        label.classList.remove('question-panic-enter');
+        label.style.removeProperty('--one-shot-delay');
+      }
+    } else if (label.classList.contains('question-panic-enter')) {
+      // Clean up if question vote is no longer selected.
+      label.classList.remove('question-panic-enter');
+      label.style.removeProperty('--one-shot-delay');
+    }
+
+    if (isSelected && val === '☕' && state.coffeeVotePourStartedAt) {
+      const elapsedMs = Date.now() - state.coffeeVotePourStartedAt;
+      if (elapsedMs < coffeePourDurationMs) {
+        // Only set class/delay once to avoid re-triggering animation on every render.
+        if (!label.classList.contains('coffee-pour-enter')) {
+          const delayMs = `-${Math.max(0, elapsedMs)}ms`;
+          label.classList.add('coffee-pour-enter');
+          label.style.setProperty('--one-shot-delay', delayMs);
+        }
+      } else {
+        state.coffeeVotePourStartedAt = 0;
+        label.classList.remove('coffee-pour-enter');
+        label.style.removeProperty('--one-shot-delay');
+      }
+    } else if (label.classList.contains('coffee-pour-enter')) {
+      // Clean up if coffee vote is no longer selected.
+      label.classList.remove('coffee-pour-enter');
+      label.style.removeProperty('--one-shot-delay');
+    }
+
+    // Keep animated selected cards visually continuous across re-renders.
+    if (isSelected) {
+      const durationMs = animatedVoteDurationsMs[val];
+      if (durationMs) {
+        btn.style.animationDelay = `-${Date.now() % durationMs}ms`;
+      }
+    }
 
     btn.addEventListener('click', () => {
       if (!isRevealed) castVote(val);
@@ -1898,7 +1981,11 @@ function showResults(session) {
 
   document.getElementById('results-avg').textContent = avg !== null ? avg.toFixed(1) : '—';
   document.getElementById('results-consensus').textContent =
-    summary.distinctNumericVotes === 0 ? 'No votes' : isConsensus ? 'Consensus' : `Split (${summary.distinctNumericVotes})`;
+    summary.distinctNumericVotes === 0
+      ? 'No votes'
+      : isConsensus
+        ? 'Consensus'
+        : `Split (${summary.distinctNumericVotes})`;
   document.getElementById('results-nearest').textContent = avg !== null ? `${summary.nearest} SP` : '—';
 
   const hasFinalDecision = session.finalDecision !== null && session.finalDecision !== undefined;
@@ -1986,11 +2073,7 @@ function renderSessionHistory(historyItems) {
     title.appendChild(el('span', 'history-entry-sep', ' - '));
     title.appendChild(el('span', 'history-entry-sp', final));
 
-    const meta = el(
-      'div',
-      'history-entry-meta',
-      `${time.textContent} • Avg ${avg} • ${consensus} • Final ${final}`
-    );
+    const meta = el('div', 'history-entry-meta', `${time.textContent} • Avg ${avg} • ${consensus} • Final ${final}`);
 
     const voteText = (item.votes || []).map((vote) => `${vote.name || 'Anonymous'}: ${vote.vote ?? '—'}`).join(' | ');
     const votes = el('div', 'history-entry-votes', voteText || 'No votes');
@@ -2051,11 +2134,7 @@ async function enterGame(sessionId) {
     updateCalcOutput();
 
     if (state.dbMode === 'demo') {
-      showToast(
-        'Demo mode: works across tabs on this browser.',
-        'info',
-        3600
-      );
+      showToast('Demo mode: works across tabs on this browser.', 'info', 3600);
     } else if (state.dbMode === 'ably') {
       showToast('Realtime mode enabled (Ably).', 'info', 3200);
     }
@@ -2223,7 +2302,9 @@ function setupEventListeners() {
   document.getElementById('btn-toggle-examples-float').addEventListener('click', toggleExamplesSidebar);
   document.getElementById('btn-collapse-examples').addEventListener('click', () => setExamplesSidebarExpanded(false));
   document.getElementById('btn-toggle-jira-prompt-float').addEventListener('click', toggleJiraPromptSidebar);
-  document.getElementById('btn-collapse-jira-prompt').addEventListener('click', () => setJiraPromptSidebarExpanded(false));
+  document
+    .getElementById('btn-collapse-jira-prompt')
+    .addEventListener('click', () => setJiraPromptSidebarExpanded(false));
 
   // Copy Rovo prompt button
   document.getElementById('jira-paste-input').addEventListener('paste', (e) => {
@@ -2246,10 +2327,7 @@ function setupEventListeners() {
             parsed.risk
           ).sp;
           state.suggestedFinalDecision = suggestedSP;
-          renderFinalDecisionPicker(
-            state.sessionData && state.sessionData.finalDecision,
-            state.isModerator
-          );
+          renderFinalDecisionPicker(state.sessionData && state.sessionData.finalDecision, state.isModerator);
         }
 
         e.target.classList.add('is-applied');

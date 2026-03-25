@@ -266,16 +266,16 @@ describe('Utility Functions', () => {
   });
 
   describe('formatAdminStatus', () => {
-    test('returns Voting when finalDecision is null', () => {
-      expect(formatAdminStatus({ finalDecision: null })).toBe('Voting');
+    test('returns voting when finalDecision is null', () => {
+      expect(formatAdminStatus({ finalDecision: null })).toBe('voting');
     });
 
-    test('returns Voting when finalDecision is undefined', () => {
-      expect(formatAdminStatus({})).toBe('Voting');
+    test('returns voting when finalDecision is undefined', () => {
+      expect(formatAdminStatus({})).toBe('voting');
     });
 
-    test('returns Voting when finalDecision is empty string', () => {
-      expect(formatAdminStatus({ finalDecision: '' })).toBe('Voting');
+    test('returns voting when finalDecision is empty string', () => {
+      expect(formatAdminStatus({ finalDecision: '' })).toBe('voting');
     });
 
     test('returns formatted SP label when finalDecision exists', () => {

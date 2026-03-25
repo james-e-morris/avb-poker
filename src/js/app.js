@@ -436,9 +436,27 @@ function captureAdminSessionAudit(session) {
   records.forEach((record) => upsertAdminHistoryRecord(record));
 }
 
+function normalizeAdminRecord(record) {
+  const normalized = { ...(record || {}) };
+  const moderatorText = safeText(normalized.moderatorName || normalized.moderator || normalized.hostName || '');
+  const storyText = safeText(normalized.story || normalized.storyName || normalized.jiraStory || '');
+  const storyLower = storyText.toLowerCase();
+
+  // Recover from legacy shifted records where story/status values were persisted in the wrong fields.
+  if ((storyLower === 'voting' || storyLower === 'revealed') && moderatorText) {
+    normalized.story = moderatorText;
+    normalized.moderatorName = '';
+  } else {
+    normalized.moderatorName = moderatorText;
+    normalized.story = storyText;
+  }
+
+  return normalized;
+}
+
 function formatAdminStatus(record) {
   const hasFinal = record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
-  return hasFinal ? `${record.finalDecision} SP` : 'Voting';
+  return hasFinal ? `${record.finalDecision} SP` : 'voting';
 }
 
 async function renderAdminDashboard() {
@@ -500,22 +518,25 @@ async function renderAdminDashboard() {
   empty.hidden = true;
 
   records.forEach((record) => {
+    const normalizedRecord = normalizeAdminRecord(record);
     const tr = document.createElement('tr');
 
     const tdWhen = document.createElement('td');
-    tdWhen.textContent = formatRevealTimestamp(record.revealedAt || record.updatedAt || record.startedAt);
+    tdWhen.textContent = formatRevealTimestamp(
+      normalizedRecord.revealedAt || normalizedRecord.updatedAt || normalizedRecord.startedAt
+    );
 
     const tdSession = document.createElement('td');
-    tdSession.textContent = record.sessionName || 'Session';
+    tdSession.textContent = normalizedRecord.sessionName || 'Session';
 
     const tdModerator = document.createElement('td');
-    tdModerator.textContent = record.moderatorName || '-';
+    tdModerator.textContent = normalizedRecord.moderatorName || '-';
 
     const tdStory = document.createElement('td');
-    tdStory.textContent = record.story || '-';
+    tdStory.textContent = normalizedRecord.story || '-';
 
     const tdStatus = document.createElement('td');
-    tdStatus.textContent = formatAdminStatus(record);
+    tdStatus.textContent = formatAdminStatus(normalizedRecord);
 
     tr.appendChild(tdWhen);
     tr.appendChild(tdSession);

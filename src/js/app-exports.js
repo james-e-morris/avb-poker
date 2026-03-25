@@ -77,7 +77,7 @@ function safeText(val) {
 function formatAdminStatus(record) {
   const hasFinal =
     record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
-  return hasFinal ? `${record.finalDecision} SP` : 'Voting';
+  return hasFinal ? `${record.finalDecision} SP` : 'voting';
 }
 
 function calculateSP(size, c, u, cl, d, r) {

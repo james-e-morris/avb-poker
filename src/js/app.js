@@ -27,6 +27,7 @@ const state = {
     risk: 1,
   },
   selectedExampleId: null,
+  suggestedFinalDecision: null, // highlighted but not selected Final Pick
 };
 
 const EXAMPLE_SCENARIOS = [
@@ -788,6 +789,7 @@ async function nextStory(storyName) {
   }
 
   state.currentVote = null;
+  state.suggestedFinalDecision = null;
 }
 
 async function setStory(name) {
@@ -928,6 +930,7 @@ function handleSessionData(session) {
 // ---- Calculator --------------------------------------------
 
 function resetCalculatorSelectionsToDefault() {
+  state.suggestedFinalDecision = null;
   applyCalcSelections({
     size: 1,
     complexity: 1,
@@ -1486,7 +1489,13 @@ function renderFinalDecisionPicker(currentDecision, canEdit) {
 
   const cardValues = FIBONACCI_CARDS.filter((v) => !isNaN(parseFloat(v)));
   cardValues.forEach((value) => {
-    const btn = el('button', `decision-chip${String(currentDecision) === String(value) ? ' selected' : ''}`, value);
+    const isSelected = String(currentDecision) === String(value);
+    const isSuggested = String(state.suggestedFinalDecision) === String(value);
+    const btnClasses = ['decision-chip'];
+    if (isSelected) btnClasses.push('selected');
+    if (isSuggested && !isSelected) btnClasses.push('suggested');
+
+    const btn = el('button', btnClasses.join(' '), value);
     btn.type = 'button';
     btn.addEventListener('click', () => setFinalDecision(value));
     pickerEl.appendChild(btn);
@@ -1836,6 +1845,25 @@ function setupEventListeners() {
       const parsed = parseJiraPromptResponse(raw);
       if (parsed) {
         applyCalcSelections(parsed);
+
+        // If votes are revealed, highlight the suggested Final Pick without selecting it
+        const isRevealed = state.wasRevealed || (state.sessionData && state.sessionData.status === 'revealed');
+        if (isRevealed && state.isModerator) {
+          const suggestedSP = calculateSP(
+            parsed.size,
+            parsed.complexity,
+            parsed.uncertainty,
+            parsed.cognitive,
+            parsed.deps,
+            parsed.risk
+          ).sp;
+          state.suggestedFinalDecision = suggestedSP;
+          renderFinalDecisionPicker(
+            state.sessionData && state.sessionData.finalDecision,
+            state.isModerator
+          );
+        }
+
         e.target.classList.add('is-applied');
         setTimeout(() => e.target.classList.remove('is-applied'), 2000);
       }

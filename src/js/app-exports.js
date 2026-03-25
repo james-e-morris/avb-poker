@@ -3,9 +3,6 @@
 
 'use strict';
 
-// These will be populated when app.js loads
-const FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];
-
 // Raw score -> Suggested SP mapping (range-based)
 function mapToFibonacci(rawScore) {
   if (rawScore < 1.1) return 1;

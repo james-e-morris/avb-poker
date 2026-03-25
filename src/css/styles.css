@@ -1304,6 +1304,12 @@ select {
   color: var(--primary-fg);
 }
 
+.decision-chip.suggested {
+  border-color: var(--primary);
+  background: var(--surface-2);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
+}
+
 .decision-chip.clear-chip {
   color: var(--text-muted);
 }

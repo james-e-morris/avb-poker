@@ -8,8 +8,20 @@
       content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.ably.com; connect-src 'self' https://*.ably.io https://*.ably-realtime.com wss://*.ably.io wss://*.ably-realtime.com; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline';"
     />
     <title>AVB Planning Poker</title>
-    <link rel="icon" type="image/svg+xml" href="/avb-poker/src/favicon.svg" />
-    <link rel="shortcut icon" href="/avb-poker/src/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="src/favicon.svg" id="favicon-icon" />
+    <link rel="shortcut icon" href="src/favicon.svg" id="favicon-shortcut" />
+    <script>
+      // Set favicon path based on deployment context
+      if (window.location.protocol === 'file:') {
+        // Local file access - use relative path
+        document.getElementById('favicon-icon').href = 'src/favicon.svg';
+        document.getElementById('favicon-shortcut').href = 'src/favicon.svg';
+      } else if (window.location.hostname === 'james-e-morris.github.io') {
+        // GitHub Pages deployment - use absolute path
+        document.getElementById('favicon-icon').href = '/avb-poker/src/favicon.svg';
+        document.getElementById('favicon-shortcut').href = '/avb-poker/src/favicon.svg';
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"

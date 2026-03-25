@@ -3,6 +3,8 @@
 
 'use strict';
 
+const TEST_FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];
+
 // Raw score -> Suggested SP mapping (range-based)
 function mapToFibonacci(rawScore) {
   if (rawScore < 1.1) return 1;
@@ -203,7 +205,7 @@ function toggleJiraPromptSidebar() {
 // Exports for testing (Node/Jest only)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    FIBONACCI_CARDS,
+    FIBONACCI_CARDS: TEST_FIBONACCI_CARDS,
     mapToFibonacci,
     scoreToMultiplier,
     formatCalcNumber,

@@ -30,6 +30,12 @@ const state = {
   suggestedFinalDecision: null, // highlighted but not selected Final Pick
 };
 
+const ADMIN_UID = 'u_4005191935_1395682239';
+const ADMIN_HISTORY_KEY = 'pp_admin_history_v1';
+const ADMIN_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
+const ADMIN_MAX_RECORDS = 500;
+const ABLY_AUDIT_EVENT = 'session_admin_audit';
+
 const EXAMPLE_SCENARIOS = [
   {
     id: 'baseline-min',
@@ -178,9 +184,320 @@ function getAblyChannelName(sessionId) {
   return `${prefix}:session:${sessionId}`;
 }
 
+function getAblyAdminAuditChannelName() {
+  const prefix = 'avb-poker';
+  return `${prefix}:admin:audit`;
+}
+
 function safeText(val) {
   if (!val) return '';
   return String(val).trim().slice(0, 80);
+}
+
+function getActivePpUid() {
+  try {
+    const fromStorage = safeText(localStorage.getItem('pp_uid'));
+    return fromStorage;
+  } catch (err) {
+    console.warn('[Planning Poker] Could not read pp_uid from localStorage:', err?.message || err);
+    return '';
+  }
+}
+
+function isAdminViewer() {
+  return safeText(getActivePpUid()) === safeText(ADMIN_UID);
+}
+
+function extractJiraTickets(text) {
+  const raw = String(text || '').toUpperCase().match(/\b[A-Z][A-Z0-9]{1,9}-\d{1,7}\b/g) || [];
+  return [...new Set(raw)];
+}
+
+function getAdminHistoryRecords() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ADMIN_HISTORY_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveAdminHistoryRecords(records) {
+  const now = Date.now();
+  const cutoff = now - ADMIN_LOOKBACK_MS * 3;
+  const cleaned = (Array.isArray(records) ? records : [])
+    .filter((item) => {
+      const t = Number(item?.updatedAt || item?.revealedAt || item?.startedAt || 0);
+      return t >= cutoff;
+    })
+    .sort((a, b) => {
+      const ta = Number(a?.revealedAt || a?.updatedAt || a?.startedAt || 0);
+      const tb = Number(b?.revealedAt || b?.updatedAt || b?.startedAt || 0);
+      return tb - ta;
+    })
+    .slice(0, ADMIN_MAX_RECORDS);
+
+  localStorage.setItem(ADMIN_HISTORY_KEY, JSON.stringify(cleaned));
+}
+
+function upsertAdminHistoryRecord(record) {
+  if (!record || !record.recordId) return;
+
+  const records = getAdminHistoryRecords();
+  const idx = records.findIndex((item) => item.recordId === record.recordId);
+  if (idx >= 0) {
+    records[idx] = { ...records[idx], ...record };
+  } else {
+    records.push(record);
+  }
+  saveAdminHistoryRecords(records);
+}
+
+function buildAdminAuditRecords(session) {
+  if (!session) return [];
+
+  const now = Date.now();
+  const sessionId = safeText(state.sessionId || session.id || 'unknown');
+  const sessionName = safeText(session.name) || 'Planning Session';
+  const story = safeText(session.story) || 'Untitled story';
+  const participants = session.participants || {};
+  const me = participants[ADMIN_UID] || null;
+  const summary = summarizeVotes(participants);
+  const records = [];
+
+  const history = Array.isArray(session.resultsHistory) ? session.resultsHistory : [];
+  history.forEach((item) => {
+    const revealedAt = Number(item?.revealedAt || now);
+    const itemStory = safeText(item?.story || story) || 'Untitled story';
+    records.push({
+      recordId: `${sessionId}::reveal::${safeText(item?.id || `${revealedAt}_${itemStory}`)}`,
+      sessionId,
+      sessionName,
+      story: itemStory,
+      jiraTickets: extractJiraTickets(itemStory),
+      status: 'revealed',
+      startedAt: Number(session.createdAt || revealedAt || now),
+      revealedAt,
+      updatedAt: now,
+      finalDecision: item?.finalDecision ?? null,
+      nearest: item?.nearest ?? null,
+      avg: item?.avg ?? null,
+      isConsensus: !!item?.isConsensus,
+      distinctVotes: Number(item?.distinctVotes || 0),
+      adminVoted: !!me?.hasVoted,
+      adminVote: me?.hasVoted ? String(me.vote ?? '') : null,
+    });
+  });
+
+  if (session.status === 'voting' && story) {
+    records.push({
+      recordId: `${sessionId}::live::${story}`,
+      sessionId,
+      sessionName,
+      story,
+      jiraTickets: extractJiraTickets(story),
+      status: 'voting',
+      startedAt: Number(session.createdAt || now),
+      updatedAt: now,
+      finalDecision: null,
+      nearest: summary.nearest,
+      avg: summary.avg,
+      isConsensus: summary.isConsensus,
+      distinctVotes: summary.distinctNumericVotes,
+      adminVoted: !!me?.hasVoted,
+      adminVote: me?.hasVoted ? String(me.vote ?? '') : null,
+    });
+  }
+
+  return records;
+}
+
+function ablyPublishAdminAudit(session) {
+  if (!session || state.dbMode !== 'ably' || !ablyRealtime) return Promise.resolve();
+
+  const records = buildAdminAuditRecords(session);
+  if (!records.length) return Promise.resolve();
+
+  const channel = ablyRealtime.channels.get(getAblyAdminAuditChannelName());
+  const payload = {
+    at: Date.now(),
+    sourceSessionId: state.sessionId || session.id || null,
+    records,
+  };
+
+  return new Promise((resolve, reject) => {
+    channel.publish(ABLY_AUDIT_EVENT, payload, (err) => {
+      if (err) return reject(toAblyActionError(err, 'publishing admin audit event'));
+      return resolve();
+    });
+  }).catch((err) => {
+    console.warn('[Planning Poker] Admin audit publish failed:', err?.message || err);
+  });
+}
+
+function ablyGetHistoryPage(channel, options) {
+  return new Promise((resolve, reject) => {
+    channel.history(options || {}, (err, page) => {
+      if (err) return reject(toAblyActionError(err, 'reading admin audit history'));
+      return resolve(page);
+    });
+  });
+}
+
+function ablyNextHistoryPage(page) {
+  return new Promise((resolve, reject) => {
+    page.next((err, nextPage) => {
+      if (err) return reject(toAblyActionError(err, 'reading next admin audit page'));
+      return resolve(nextPage);
+    });
+  });
+}
+
+async function fetchAdminHistoryFromAbly() {
+  if (!ablyRealtime) return [];
+
+  const now = Date.now();
+  const cutoff = Date.now() - ADMIN_LOOKBACK_MS;
+  const channel = ablyRealtime.channels.get(getAblyAdminAuditChannelName());
+  const merged = new Map();
+  let page = await ablyGetHistoryPage(channel, {
+    start: cutoff,
+    end: now,
+    direction: 'backwards',
+    limit: 200,
+  });
+  let pageCount = 0;
+
+  while (page && pageCount < 20) {
+    pageCount += 1;
+    const items = Array.isArray(page.items) ? page.items : [];
+    if (!items.length) break;
+
+    for (const item of items) {
+      if (item?.name !== ABLY_AUDIT_EVENT) continue;
+      const payloadRecords = Array.isArray(item?.data?.records) ? item.data.records : [];
+      payloadRecords.forEach((record) => {
+        const recordTime = Number(record?.revealedAt || record?.updatedAt || record?.startedAt || item.timestamp || 0);
+        if (recordTime < cutoff) return;
+        const normalized = {
+          ...record,
+          updatedAt: Number(record?.updatedAt || item.timestamp || Date.now()),
+        };
+        const key = String(normalized.recordId || `${normalized.sessionId || 'unknown'}::${normalized.story || 'story'}`);
+        const prev = merged.get(key);
+        if (!prev || Number(normalized.updatedAt || 0) >= Number(prev.updatedAt || 0)) {
+          merged.set(key, normalized);
+        }
+      });
+    }
+
+    const oldestItemTs = Number(items[items.length - 1]?.timestamp || 0);
+    if (oldestItemTs && oldestItemTs < cutoff) break;
+    if (!page.hasNext || !page.hasNext()) break;
+    page = await ablyNextHistoryPage(page);
+  }
+
+  return [...merged.values()].sort((a, b) => {
+    const ta = Number(a?.revealedAt || a?.updatedAt || a?.startedAt || 0);
+    const tb = Number(b?.revealedAt || b?.updatedAt || b?.startedAt || 0);
+    return tb - ta;
+  });
+}
+
+function captureAdminSessionAudit(session) {
+  if (!isAdminViewer() || !session) return;
+  const records = buildAdminAuditRecords(session);
+  records.forEach((record) => upsertAdminHistoryRecord(record));
+}
+
+function formatAdminResult(record) {
+  const hasFinal = record.finalDecision !== null && record.finalDecision !== undefined && record.finalDecision !== '';
+  return hasFinal ? `${record.finalDecision} SP` : '-';
+}
+
+async function renderAdminDashboard() {
+  const panel = document.getElementById('admin-dashboard');
+  const empty = document.getElementById('admin-history-empty');
+  const body = document.getElementById('admin-history-body');
+  const uidEl = document.getElementById('admin-uid-value');
+  const countEl = document.getElementById('admin-history-count');
+  const refreshBtn = document.getElementById('btn-admin-refresh');
+  if (!panel || !empty || !body || !uidEl || !countEl) return;
+
+  // Keep hidden until all admin checks pass.
+  panel.hidden = true;
+  uidEl.textContent = '—';
+
+  const uid = getActivePpUid();
+  if (!uid) {
+    return;
+  }
+
+  uidEl.textContent = uid;
+
+  if (!isAdminViewer()) {
+    return;
+  }
+
+  panel.hidden = false;
+  if (refreshBtn) {
+    refreshBtn.textContent = 'Refresh history';
+  }
+
+  const cutoff = Date.now() - ADMIN_LOOKBACK_MS;
+  let records = [];
+  if (state.dbMode === 'ably') {
+    try {
+      records = await fetchAdminHistoryFromAbly();
+      saveAdminHistoryRecords(records);
+    } catch (err) {
+      console.warn('[Planning Poker] Falling back to local admin cache:', err?.message || err);
+      records = getAdminHistoryRecords();
+    }
+  } else {
+    records = getAdminHistoryRecords();
+  }
+
+  records = records.filter((item) => {
+    const t = Number(item?.revealedAt || item?.updatedAt || item?.startedAt || 0);
+    return t >= cutoff;
+  });
+
+  countEl.textContent = `${records.length} item${records.length === 1 ? '' : 's'} from last 7 days`;
+  body.innerHTML = '';
+
+  if (!records.length) {
+    empty.hidden = false;
+    return;
+  }
+
+  empty.hidden = true;
+
+  records.forEach((record) => {
+    const tr = document.createElement('tr');
+
+    const tdWhen = document.createElement('td');
+    tdWhen.textContent = formatRevealTimestamp(record.revealedAt || record.updatedAt || record.startedAt);
+
+    const tdSession = document.createElement('td');
+    tdSession.textContent = record.sessionName || 'Session';
+
+    const tdStory = document.createElement('td');
+    tdStory.textContent = record.story || '-';
+
+    const tdStatus = document.createElement('td');
+    tdStatus.textContent = record.status === 'revealed' ? 'Revealed' : 'Voting';
+
+    const tdFinal = document.createElement('td');
+    tdFinal.textContent = formatAdminResult(record);
+
+    tr.appendChild(tdWhen);
+    tr.appendChild(tdSession);
+    tr.appendChild(tdStory);
+    tr.appendChild(tdStatus);
+    tr.appendChild(tdFinal);
+    body.appendChild(tr);
+  });
 }
 
 function calculateSP(size, c, u, cl, d, r) {
@@ -637,6 +954,7 @@ async function createSession(sessionName, userName) {
   state.userId = userId;
   state.userName = safeText(userName);
   state.isModerator = true;
+  ablyPublishAdminAudit(session);
   return sessionId;
 }
 
@@ -689,12 +1007,14 @@ async function castVote(value) {
 
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
     await ablyPublishState(channel, session);
+    ablyPublishAdminAudit(session);
   } else {
     const session = getDemoSession(sessionId);
     if (session && session.participants && session.participants[userId]) {
       session.participants[userId].vote = value;
       session.participants[userId].hasVoted = true;
       saveDemoSession(sessionId, session);
+      captureAdminSessionAudit(session);
     }
   }
 
@@ -714,6 +1034,7 @@ async function revealVotes() {
     session.status = 'revealed';
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
     await ablyPublishState(channel, session);
+    ablyPublishAdminAudit(session);
   } else {
     const session = getDemoSession(sessionId);
     if (session) {
@@ -722,6 +1043,7 @@ async function revealVotes() {
       appendRevealHistoryEntry(session);
       session.status = 'revealed';
       saveDemoSession(sessionId, session);
+      captureAdminSessionAudit(session);
     }
   }
 }
@@ -737,12 +1059,14 @@ async function setFinalDecision(value) {
     applyFinalDecisionToHistory(session, value || null);
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
     await ablyPublishState(channel, session);
+    ablyPublishAdminAudit(session);
   } else {
     const session = getDemoSession(sessionId);
     if (!session || session.status !== 'revealed') return;
     session.finalDecision = value || null;
     applyFinalDecisionToHistory(session, value || null);
     saveDemoSession(sessionId, session);
+    captureAdminSessionAudit(session);
   }
 }
 
@@ -768,6 +1092,7 @@ async function nextStory(storyName) {
       });
       const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
       await ablyPublishState(channel, session);
+      ablyPublishAdminAudit(session);
     }
   } else {
     const session = getDemoSession(sessionId);
@@ -785,6 +1110,7 @@ async function nextStory(storyName) {
         session.participants[uid].hasVoted = false;
       });
       saveDemoSession(sessionId, session);
+      captureAdminSessionAudit(session);
     }
   }
 
@@ -803,12 +1129,14 @@ async function setStory(name) {
       session.story = clean;
       const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
       await ablyPublishState(channel, session);
+      ablyPublishAdminAudit(session);
     }
   } else {
     const session = getDemoSession(sessionId);
     if (session) {
       session.story = clean;
       saveDemoSession(sessionId, session);
+      captureAdminSessionAudit(session);
     }
   }
 }
@@ -889,6 +1217,7 @@ function handleSessionData(session) {
   state.sessionData = session;
   state.wasRevealed = nowRevealed;
   state.isModerator = session.moderatorId === state.userId;
+  captureAdminSessionAudit(session);
 
   if (!state.initialStoryPromptChecked) {
     state.initialStoryPromptChecked = true;
@@ -925,6 +1254,7 @@ function handleSessionData(session) {
   }
 
   updateFooter(participants, session.status);
+  renderAdminDashboard();
 }
 
 // ---- Calculator --------------------------------------------
@@ -1657,6 +1987,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   const target = document.getElementById(`view-${name}`);
   if (target) target.classList.add('active');
+  if (name === 'home') renderAdminDashboard();
 }
 
 async function enterGame(sessionId) {
@@ -1702,6 +2033,7 @@ function leaveGame() {
   renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);
   showView('home');
+  renderAdminDashboard();
 }
 
 // ---- Toast -------------------------------------------------
@@ -1784,6 +2116,15 @@ function setupEventListeners() {
       showToast(err.message || 'Could not join session', 'error');
     }
   });
+
+  const refreshBtn = document.getElementById('btn-admin-refresh');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      if (!isAdminViewer()) return;
+      renderAdminDashboard();
+      showToast('Refreshed admin history', 'info');
+    });
+  }
 
   // Enter key on home inputs
   ['session-name-input', 'create-name-input'].forEach((id) =>
@@ -2058,6 +2399,7 @@ async function router() {
   }
 
   showView('home');
+  renderAdminDashboard();
 }
 
 // ---- Boot --------------------------------------------------
@@ -2087,7 +2429,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('join-name-input').value = storedName;
   }
 
+  // Browser helper for fast admin UID diagnostics in DevTools.
+  window.ppAdminDebug = () => {
+    const storedUid = safeText(localStorage.getItem('pp_uid'));
+    const activeUid = getActivePpUid();
+    const panel = document.getElementById('admin-dashboard');
+    const uidNode = document.getElementById('admin-uid-value');
+    const summary = {
+      adminUidConfigured: ADMIN_UID,
+      storedPpUid: storedUid || '(missing)',
+      activePpUid: activeUid || '(missing)',
+      isAdminViewer: isAdminViewer(),
+      dbMode: state.dbMode,
+      adminPanelHidden: panel ? !!panel.hidden : '(panel missing)',
+      renderedUidText: uidNode ? uidNode.textContent : '(uid node missing)',
+    };
+    console.table(summary);
+    return summary;
+  };
+
+  const initialUid = getActivePpUid();
+  console.info('[Planning Poker] Admin identity check:', {
+    configuredAdminUid: ADMIN_UID,
+    activePpUid: initialUid || '(missing)',
+    isAdminViewer: safeText(initialUid) === safeText(ADMIN_UID),
+  });
+
   setupEventListeners();
+  renderAdminDashboard();
   router();
 
   // BE mode badge

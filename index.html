@@ -95,6 +95,34 @@
           </div>
         </div>
 
+        <section id="admin-dashboard" class="card admin-dashboard" hidden>
+          <div class="admin-dashboard-head">
+            <div>
+              <h2>Admin Activity (Last 7 Days)</h2>
+              <p class="card-desc">Linked to your pp_uid: <span id="admin-uid-value">—</span></p>
+            </div>
+            <button id="btn-admin-refresh" class="btn btn-ghost btn-sm">Refresh</button>
+          </div>
+
+          <p id="admin-history-count" class="admin-history-count">0 items from last 7 days</p>
+          <p id="admin-history-empty" class="admin-history-empty">No sessions recorded in the last week.</p>
+
+          <div class="admin-table-wrap" aria-live="polite">
+            <table class="admin-history-table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Session</th>
+                  <th>Story Name</th>
+                  <th>Status</th>
+                  <th>Final Result</th>
+                </tr>
+              </thead>
+              <tbody id="admin-history-body"></tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- Formula Preview -->
         <!-- <details class="formula-preview card">
           <summary>How the Story Point Calculator Works</summary>

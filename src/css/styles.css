@@ -310,6 +310,59 @@ select {
   margin-top: 4px;
 }
 
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-dashboard[hidden] {
+  display: none !important;
+}
+.admin-dashboard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-dashboard-head h2 {
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+.admin-history-count,
+.admin-history-empty {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.admin-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  background: var(--surface);
+}
+.admin-history-table th,
+.admin-history-table td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  font-size: 0.82rem;
+}
+.admin-history-table th {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+.admin-history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .formula-preview {
   max-width: 900px;
 }
@@ -2185,6 +2238,13 @@ select {
   }
   .card {
     padding: 20px;
+  }
+  .admin-dashboard-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-dashboard-head .btn {
+    width: 100%;
   }
   .create-card h2,
   .join-card h2 {

@@ -1,43 +1,70 @@
-# AVB Planning Poker - GitHub Pages Deployment
+# AVB Planning Poker
 
-This app is a static site, so it deploys cleanly to GitHub Pages.
+Fast planning poker for sprint refinement and story estimation
 
-## What is already set up
+## Quick Start Steps
 
-- GitHub Actions workflow: `.github/workflows/planning-poker-pages.yml`
-- Deploy source: `index.html` from root plus assets from `src/js/` and `src/css/`
-- Output: GitHub Pages site artifact
-- Ably key injection at deploy-time from repo secret `ABLY_API_KEY`
+1. Enter your name
+2. Create Session or Join Session
+3. Share the Invite link
+4. Vote
+5. Reveal
+6. Set Final pick
+7. Start Next Story
 
-## One-time GitHub setup
+## What You Get
 
-1. In GitHub, open your repository settings.
-2. Go to **Secrets and variables > Actions**.
-3. Add a repository secret named `ABLY_API_KEY`.
-   - Value format: `xxxxxx.yyyyyy:zzzzzzzzzzzzzz`
-   - If omitted, app still deploys and runs in local demo mode.
-4. Go to **Settings > Pages**.
-5. Set **Source** to **GitHub Actions**.
+- Private voting with Fibonacci cards
+- Live shared session for all participants
+- Results with Average, Consensus, and Nearest SP
+- Moderator final decision before moving on
+- Built-in calculator + AI prompt helper
 
-## Deploy behavior
+## Session Flow
 
-- Pushes to `prod`/`main` that touch app files or the workflow trigger deploy.
-- You can also run the workflow manually via **Actions > Deploy Planning Poker to GitHub Pages**.
+1. Moderator sets Story name
+2. Team votes with cards or calculator
+3. Moderator clicks Reveal Votes
+4. Team discusses outliers
+5. Moderator sets Final pick
+6. Moderator starts Next Story
 
-## Ably troubleshooting
+> Next Story is disabled until Final pick is set
 
-If join/create fails with Ably error `40160 action not permitted`, the key exists but lacks required capabilities for this app.
+## Roles
 
-Required key capabilities for channel prefix `avb-poker`:
+- Moderator: edit story, reveal, set final pick, start next story
+- Participant: vote and review results
 
-- `publish`
-- `subscribe`
-- `history`
+If all numeric votes match, Final pick is auto-suggested from consensus
 
-Scope recommendation:
+## Voting Options
 
-- `avb-poker:*` with the capabilities above
+- Cards: `0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, ?, coffee`
+- Calculator Vote: pick 6 factors, then click Vote X
 
-## Security note
+## Calculator (Quick)
 
-Using an Ably API key directly in browser code is acceptable for quick demos but exposes credentials to clients. For production, move to token auth via a small backend auth endpoint.
+- Factors: Size, Complexity, Uncertainty, Cognitive Load, Dependencies, Risk
+- Levels: Low = 1.0, Medium = 1.1, High = 1.2
+- Output: raw score + mapped Fibonacci story points
+
+## Side Panels
+
+- History: previous revealed stories and final picks
+- Examples: one-click sample scenarios
+- AI Prompt: copy prompt to Jira Rovo AI, paste response to auto-apply ratings
+
+## Invite and Rejoin
+
+- Invite copies the current session URL
+- Session ID is uppercase letters/numbers
+- Join accepts 4-12 characters
+
+If a session expires, create a new one and resend invite
+
+## Quick Troubleshooting
+
+- Cannot join: session may be expired
+- Realtime not updating: app may be in demo mode (best in same-browser tabs)
+- Cannot vote: voting is locked after reveal until next story starts

@@ -1,5 +1,7 @@
 # AVB Planning Poker
 
+Live app: https://james-e-morris.github.io/avb-poker/
+
 Fast planning poker for sprint refinement and story estimation
 
 ## Quick Start Steps

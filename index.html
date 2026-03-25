@@ -254,14 +254,28 @@ Low=Isolated fix, easy rollback | Medium=Component-level impact, careful testing
 
 ANALYSIS: Review description and AC for each factor. Pick the dominant rating for each.
 
+RATING BASELINE RULES:
+- Treat Low as the normal/default rating for a typical ticket at the chosen Size.
+- Medium means extra work or friction beyond that baseline (not "average").
+- High means substantial added burden that clearly pushes effort above baseline.
+- Choose Size first as the primary scope anchor, then only raise factor ratings when concrete evidence justifies additional effort.
+- Avoid blanket Medium ratings; if no explicit complicating signal exists for a factor, keep it Low.
+
 OUTPUT FORMAT (strict):
 Size: [1|2|3|5|8]
+- [one-line reason for the size chosen]
 Complexity: [Low|Medium|High]
+- [one-line reason — include only if Medium or High]
 Uncertainty: [Low|Medium|High]
+- [one-line reason — include only if Medium or High]
 Cognitive Load: [Low|Medium|High]
+- [one-line reason — include only if Medium or High]
 Dependencies: [Low|Medium|High]
+- [one-line reason — include only if Medium or High]
 Risk: [Low|Medium|High]
+- [one-line reason — include only if Medium or High]
 Suggested Story Points: [result]
+- [one-line summary of key factors driving the score]
 
 CALCULATION:
 Multipliers: Low=1.0, Medium=1.1, High=1.2

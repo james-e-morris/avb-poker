@@ -121,9 +121,22 @@ function parseJiraPromptResponse(text) {
   const levelToValue = { low: 1, medium: 2, high: 3 };
   const sizeValues = [1, 2, 3, 5, 8];
 
+  const lines = text.split(/\r?\n/);
+
   const get = (label) => {
     const match = text.match(new RegExp(`^${label}\\s*:\\s*(.+)$`, 'im'));
     return match ? match[1].trim() : null;
+  };
+
+  const getReason = (label) => {
+    const labelRegex = new RegExp(`^${label}\\s*:`, 'i');
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (labelRegex.test(lines[i].trim())) {
+        const reasonMatch = lines[i + 1].match(/^\s*-\s+(.+)$/);
+        return reasonMatch ? reasonMatch[1].trim() : null;
+      }
+    }
+    return null;
   };
 
   const rawSize = get('Size');
@@ -145,7 +158,29 @@ function parseJiraPromptResponse(text) {
 
   if (!size || !complexity || !uncertainty || !cognitive || !deps || !risk) return null;
 
-  return { size, complexity, uncertainty, cognitive, deps, risk };
+  const sizeReason = getReason('Size');
+  const complexityReason = complexity > 1 ? getReason('Complexity') : null;
+  const uncertaintyReason = uncertainty > 1 ? getReason('Uncertainty') : null;
+  const cognitiveReason = cognitive > 1 ? getReason('Cognitive Load') : null;
+  const depsReason = deps > 1 ? getReason('Dependencies') : null;
+  const riskReason = risk > 1 ? getReason('Risk') : null;
+  const spReason = getReason('Suggested Story Points');
+
+  return {
+    size,
+    sizeReason,
+    complexity,
+    complexityReason,
+    uncertainty,
+    uncertaintyReason,
+    cognitive,
+    cognitiveReason,
+    deps,
+    depsReason,
+    risk,
+    riskReason,
+    spReason,
+  };
 }
 
 // ---- Jira Prompt Sidebar ------------------------------------

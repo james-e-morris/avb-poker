@@ -13,12 +13,18 @@ const {
 describe('parseJiraPromptResponse', () => {
   const validResponse = `
 Size: 5
+- spans multiple areas of the codebase
 Complexity: Medium
+- involves non-trivial pattern matching
 Uncertainty: Low
 Cognitive Load: Medium
+- requires holding multiple system concepts simultaneously
 Dependencies: Medium
+- one external team dependency
 Risk: Medium
+- incorrect behavior would affect end users
 Suggested Story Points: 8
+- size 5 base with four medium-rated factors
 `.trim();
 
   describe('valid inputs', () => {
@@ -26,24 +32,59 @@ Suggested Story Points: 8
       const result = parseJiraPromptResponse(validResponse);
       expect(result).toEqual({
         size: 5,
+        sizeReason: 'spans multiple areas of the codebase',
         complexity: 2,
+        complexityReason: 'involves non-trivial pattern matching',
         uncertainty: 1,
+        uncertaintyReason: null,
         cognitive: 2,
+        cognitiveReason: 'requires holding multiple system concepts simultaneously',
         deps: 2,
+        depsReason: 'one external team dependency',
         risk: 2,
+        riskReason: 'incorrect behavior would affect end users',
+        spReason: 'size 5 base with four medium-rated factors',
       });
     });
 
     test('parses all-Low ratings with size 1', () => {
       const text = `Size: 1\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low\nSuggested Story Points: 1`;
       const result = parseJiraPromptResponse(text);
-      expect(result).toEqual({ size: 1, complexity: 1, uncertainty: 1, cognitive: 1, deps: 1, risk: 1 });
+      expect(result).toEqual({
+        size: 1,
+        sizeReason: null,
+        complexity: 1,
+        complexityReason: null,
+        uncertainty: 1,
+        uncertaintyReason: null,
+        cognitive: 1,
+        cognitiveReason: null,
+        deps: 1,
+        depsReason: null,
+        risk: 1,
+        riskReason: null,
+        spReason: null,
+      });
     });
 
     test('parses all-High ratings with size 8', () => {
       const text = `Size: 8\nComplexity: High\nUncertainty: High\nCognitive Load: High\nDependencies: High\nRisk: High\nSuggested Story Points: 89`;
       const result = parseJiraPromptResponse(text);
-      expect(result).toEqual({ size: 8, complexity: 3, uncertainty: 3, cognitive: 3, deps: 3, risk: 3 });
+      expect(result).toEqual({
+        size: 8,
+        sizeReason: null,
+        complexity: 3,
+        complexityReason: null,
+        uncertainty: 3,
+        uncertaintyReason: null,
+        cognitive: 3,
+        cognitiveReason: null,
+        deps: 3,
+        depsReason: null,
+        risk: 3,
+        riskReason: null,
+        spReason: null,
+      });
     });
 
     test('parses size 2', () => {
@@ -241,13 +282,87 @@ Suggested Story Points: 8
   describe('output object shape', () => {
     test('returned object has exactly the correct keys', () => {
       const result = parseJiraPromptResponse(validResponse);
-      expect(Object.keys(result).sort()).toEqual(['cognitive', 'complexity', 'deps', 'risk', 'size', 'uncertainty']);
+      expect(Object.keys(result).sort()).toEqual([
+        'cognitive',
+        'cognitiveReason',
+        'complexity',
+        'complexityReason',
+        'deps',
+        'depsReason',
+        'risk',
+        'riskReason',
+        'size',
+        'sizeReason',
+        'spReason',
+        'uncertainty',
+        'uncertaintyReason',
+      ]);
     });
 
-    test('all returned values are numbers', () => {
+    test('all rating values are numbers', () => {
       const result = parseJiraPromptResponse(validResponse);
-      Object.values(result).forEach((v) => expect(typeof v).toBe('number'));
+      ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'].forEach((key) => {
+        expect(typeof result[key]).toBe('number');
+      });
     });
+  });
+});
+
+// ============================================================
+// parseJiraPromptResponse — reason sub-bullets
+// ============================================================
+
+describe('parseJiraPromptResponse reason sub-bullets', () => {
+  test('parses sizeReason when sub-bullet is present', () => {
+    const text = `Size: 3\n- needs changes to two services\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low`;
+    expect(parseJiraPromptResponse(text).sizeReason).toBe('needs changes to two services');
+  });
+
+  test('returns null sizeReason when sub-bullet is absent', () => {
+    const text = `Size: 3\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low`;
+    expect(parseJiraPromptResponse(text).sizeReason).toBeNull();
+  });
+
+  test('parses complexityReason for Medium rating', () => {
+    const text = `Size: 1\nComplexity: Medium\n- edge case handling required\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low`;
+    expect(parseJiraPromptResponse(text).complexityReason).toBe('edge case handling required');
+  });
+
+  test('parses riskReason for High rating', () => {
+    const text = `Size: 1\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: High\n- critical path affects all users`;
+    expect(parseJiraPromptResponse(text).riskReason).toBe('critical path affects all users');
+  });
+
+  test('returns null reason for Low rating even if sub-bullet is present in text', () => {
+    const text = `Size: 1\nComplexity: Low\nUncertainty: Low\n- this should be ignored\nCognitive Load: Low\nDependencies: Low\nRisk: Low`;
+    expect(parseJiraPromptResponse(text).uncertaintyReason).toBeNull();
+  });
+
+  test('parses depsReason for High rating', () => {
+    const text = `Size: 1\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: High\n- three external team dependencies\nRisk: Low`;
+    expect(parseJiraPromptResponse(text).depsReason).toBe('three external team dependencies');
+  });
+
+  test('parses spReason when present', () => {
+    const text = `Size: 2\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low\nSuggested Story Points: 2\n- size 2 with all low factors`;
+    expect(parseJiraPromptResponse(text).spReason).toBe('size 2 with all low factors');
+  });
+
+  test('returns null spReason when absent', () => {
+    const text = `Size: 1\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low`;
+    expect(parseJiraPromptResponse(text).spReason).toBeNull();
+  });
+
+  test('parses all reasons in a fully annotated response', () => {
+    const text = `Size: 3\n- standard feature across two layers\nComplexity: Medium\n- novel integration pattern\nUncertainty: High\n- requirements still being finalized\nCognitive Load: Medium\n- multiple concepts to juggle\nDependencies: Low\nRisk: High\n- affects critical billing flow\nSuggested Story Points: 8\n- elevated by uncertainty and risk`;
+    const result = parseJiraPromptResponse(text);
+    expect(result.sizeReason).toBe('standard feature across two layers');
+    expect(result.complexityReason).toBe('novel integration pattern');
+    expect(result.uncertaintyReason).toBe('requirements still being finalized');
+    expect(result.cognitiveReason).toBe('multiple concepts to juggle');
+    expect(result.depsReason).toBeNull();
+    expect(result.riskReason).toBe('affects critical billing flow');
+    expect(result.spReason).toBe('elevated by uncertainty and risk');
   });
 });
 

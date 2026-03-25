@@ -194,7 +194,30 @@ function safeText(val) {
   return String(val).trim().slice(0, 80);
 }
 
+function getAblyClientId() {
+  if (!ablyRealtime) return '';
+
+  const candidates = [
+    ablyRealtime.auth?.clientId,
+    ablyRealtime.clientId,
+    ablyRealtime.options?.clientId,
+  ];
+
+  for (const value of candidates) {
+    const cleaned = safeText(value);
+    if (cleaned) return cleaned;
+  }
+
+  return '';
+}
+
 function getActivePpUid() {
+  if (state.dbMode === 'ably') {
+    const ablyClientId = getAblyClientId();
+    if (ablyClientId) return ablyClientId;
+    return '';
+  }
+
   try {
     const fromStorage = safeText(localStorage.getItem('pp_uid'));
     return fromStorage;
@@ -261,6 +284,7 @@ function buildAdminAuditRecords(session) {
   const sessionName = safeText(session.name) || 'Planning Session';
   const story = safeText(session.story) || 'Untitled story';
   const participants = session.participants || {};
+  const moderatorName = safeText(participants[session.moderatorId]?.name || session.moderatorName || '');
   const me = participants[ADMIN_UID] || null;
   const summary = summarizeVotes(participants);
   const records = [];
@@ -273,6 +297,7 @@ function buildAdminAuditRecords(session) {
       recordId: `${sessionId}::reveal::${safeText(item?.id || `${revealedAt}_${itemStory}`)}`,
       sessionId,
       sessionName,
+      moderatorName,
       story: itemStory,
       jiraTickets: extractJiraTickets(itemStory),
       status: 'revealed',
@@ -294,6 +319,7 @@ function buildAdminAuditRecords(session) {
       recordId: `${sessionId}::live::${story}`,
       sessionId,
       sessionName,
+      moderatorName,
       story,
       jiraTickets: extractJiraTickets(story),
       status: 'voting',
@@ -410,9 +436,9 @@ function captureAdminSessionAudit(session) {
   records.forEach((record) => upsertAdminHistoryRecord(record));
 }
 
-function formatAdminResult(record) {
-  const hasFinal = record.finalDecision !== null && record.finalDecision !== undefined && record.finalDecision !== '';
-  return hasFinal ? `${record.finalDecision} SP` : '-';
+function formatAdminStatus(record) {
+  const hasFinal = record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
+  return hasFinal ? `${record.finalDecision} SP` : 'Voting';
 }
 
 async function renderAdminDashboard() {
@@ -482,20 +508,20 @@ async function renderAdminDashboard() {
     const tdSession = document.createElement('td');
     tdSession.textContent = record.sessionName || 'Session';
 
+    const tdModerator = document.createElement('td');
+    tdModerator.textContent = record.moderatorName || '-';
+
     const tdStory = document.createElement('td');
     tdStory.textContent = record.story || '-';
 
     const tdStatus = document.createElement('td');
-    tdStatus.textContent = record.status === 'revealed' ? 'Revealed' : 'Voting';
-
-    const tdFinal = document.createElement('td');
-    tdFinal.textContent = formatAdminResult(record);
+    tdStatus.textContent = formatAdminStatus(record);
 
     tr.appendChild(tdWhen);
     tr.appendChild(tdSession);
+    tr.appendChild(tdModerator);
     tr.appendChild(tdStory);
     tr.appendChild(tdStatus);
-    tr.appendChild(tdFinal);
     body.appendChild(tr);
   });
 }
@@ -2432,12 +2458,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Browser helper for fast admin UID diagnostics in DevTools.
   window.ppAdminDebug = () => {
     const storedUid = safeText(localStorage.getItem('pp_uid'));
+    const ablyClientId = getAblyClientId();
     const activeUid = getActivePpUid();
     const panel = document.getElementById('admin-dashboard');
     const uidNode = document.getElementById('admin-uid-value');
     const summary = {
       adminUidConfigured: ADMIN_UID,
       storedPpUid: storedUid || '(missing)',
+      ablyClientId: ablyClientId || '(missing)',
       activePpUid: activeUid || '(missing)',
       isAdminViewer: isAdminViewer(),
       dbMode: state.dbMode,

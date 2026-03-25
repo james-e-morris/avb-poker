@@ -11,6 +11,7 @@ const {
   getAblyErrorCode,
   getAblyChannelName,
   safeText,
+  formatAdminStatus,
 } = require('../../../src/js/app-exports.js');
 
 describe('Utility Functions', () => {
@@ -261,6 +262,25 @@ describe('Utility Functions', () => {
 
     test('has 13 cards', () => {
       expect(FIBONACCI_CARDS.length).toBe(13);
+    });
+  });
+
+  describe('formatAdminStatus', () => {
+    test('returns Voting when finalDecision is null', () => {
+      expect(formatAdminStatus({ finalDecision: null })).toBe('Voting');
+    });
+
+    test('returns Voting when finalDecision is undefined', () => {
+      expect(formatAdminStatus({})).toBe('Voting');
+    });
+
+    test('returns Voting when finalDecision is empty string', () => {
+      expect(formatAdminStatus({ finalDecision: '' })).toBe('Voting');
+    });
+
+    test('returns formatted SP label when finalDecision exists', () => {
+      expect(formatAdminStatus({ finalDecision: 8 })).toBe('8 SP');
+      expect(formatAdminStatus({ finalDecision: '13' })).toBe('13 SP');
     });
   });
 });

@@ -74,6 +74,12 @@ function safeText(val) {
   return String(val).trim().slice(0, 80);
 }
 
+function formatAdminStatus(record) {
+  const hasFinal =
+    record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
+  return hasFinal ? `${record.finalDecision} SP` : 'Voting';
+}
+
 function calculateSP(size, c, u, cl, d, r) {
   const complexityMultiplier = scoreToMultiplier(c);
   const uncertaintyMultiplier = scoreToMultiplier(u);
@@ -214,6 +220,7 @@ module.exports = {
   getAblyErrorCode,
   getAblyChannelName,
   safeText,
+  formatAdminStatus,
   calculateSP,
   generateSessionId,
   isRoomExpired,

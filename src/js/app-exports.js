@@ -115,6 +115,59 @@ function isRoomExpired(session) {
   return !!(session && session.expiresAt && Date.now() > Number(session.expiresAt));
 }
 
+// ---- Jira Prompt Parsing -----------------------------------
+
+function parseJiraPromptResponse(text) {
+  const levelToValue = { low: 1, medium: 2, high: 3 };
+  const sizeValues = [1, 2, 3, 5, 8];
+
+  const get = (label) => {
+    const match = text.match(new RegExp(`^${label}\\s*:\\s*(.+)$`, 'im'));
+    return match ? match[1].trim() : null;
+  };
+
+  const rawSize = get('Size');
+  const rawComplexity = get('Complexity');
+  const rawUncertainty = get('Uncertainty');
+  const rawCognitive = get('Cognitive Load');
+  const rawDeps = get('Dependencies');
+  const rawRisk = get('Risk');
+
+  if (!rawSize || !rawComplexity || !rawUncertainty || !rawCognitive || !rawDeps || !rawRisk) return null;
+
+  const sizeNum = parseInt(rawSize, 10);
+  const size = sizeValues.includes(sizeNum) ? sizeNum : null;
+  const complexity = levelToValue[rawComplexity.toLowerCase()];
+  const uncertainty = levelToValue[rawUncertainty.toLowerCase()];
+  const cognitive = levelToValue[rawCognitive.toLowerCase()];
+  const deps = levelToValue[rawDeps.toLowerCase()];
+  const risk = levelToValue[rawRisk.toLowerCase()];
+
+  if (!size || !complexity || !uncertainty || !cognitive || !deps || !risk) return null;
+
+  return { size, complexity, uncertainty, cognitive, deps, risk };
+}
+
+// ---- Jira Prompt Sidebar ------------------------------------
+
+function setJiraPromptSidebarExpanded(expanded) {
+  const gameView = document.getElementById('view-game');
+  const sidebar = document.getElementById('jira-prompt-sidebar');
+  const openBtn = document.getElementById('btn-toggle-jira-prompt-float');
+  if (!gameView || !sidebar || !openBtn) return;
+
+  gameView.classList.toggle('jira-prompt-open', !!expanded);
+  sidebar.classList.toggle('is-collapsed', !expanded);
+  openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  openBtn.hidden = !!expanded;
+}
+
+function toggleJiraPromptSidebar() {
+  const gameView = document.getElementById('view-game');
+  if (!gameView) return;
+  setJiraPromptSidebarExpanded(!gameView.classList.contains('jira-prompt-open'));
+}
+
 // Exports for testing
 module.exports = {
   FIBONACCI_CARDS,
@@ -130,4 +183,7 @@ module.exports = {
   calculateSP,
   generateSessionId,
   isRoomExpired,
+  parseJiraPromptResponse,
+  setJiraPromptSidebarExpanded,
+  toggleJiraPromptSidebar,
 };

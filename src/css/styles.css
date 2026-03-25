@@ -28,10 +28,10 @@
   --z-calculator: 20;
   --z-history-fab: 30;
   --z-examples-fab: 31;
-  --z-rovo-prompt-fab: 32;
+  --z-jira-prompt-fab: 32;
   --z-history-sidebar: 40;
   --z-examples-sidebar: 41;
-  --z-rovo-prompt-sidebar: 42;
+  --z-jira-prompt-sidebar: 42;
   --z-demo-badge: 50;
   --z-modal: 100;
   --z-toast: 200;
@@ -1342,11 +1342,11 @@ select {
   box-shadow: var(--shadow);
 }
 
-.rovo-prompt-fab {
+.jira-prompt-fab {
   position: fixed;
   top: 102px;
   right: 12px;
-  z-index: var(--z-rovo-prompt-fab);
+  z-index: var(--z-jira-prompt-fab);
   box-shadow: var(--shadow);
 }
 
@@ -1405,7 +1405,7 @@ select {
   transform: translateX(102%);
 }
 
-.rovo-prompt-sidebar {
+.jira-prompt-sidebar {
   position: fixed;
   top: 64px;
   right: 0;
@@ -1417,13 +1417,13 @@ select {
   box-shadow: var(--shadow-md);
   transform: translateX(0);
   transition: transform 0.18s ease;
-  z-index: var(--z-rovo-prompt-sidebar);
+  z-index: var(--z-jira-prompt-sidebar);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.rovo-prompt-sidebar.is-collapsed {
+.jira-prompt-sidebar.is-collapsed {
   transform: translateX(102%);
 }
 
@@ -1449,37 +1449,59 @@ select {
   font-size: 0.75rem;
 }
 
-.rovo-prompt-sidebar-head {
+.jira-prompt-sidebar-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.rovo-prompt-sidebar-title {
+.jira-prompt-sidebar-title {
   font-size: 0.9rem;
   font-weight: 700;
 }
 
-.rovo-prompt-collapse-btn {
+.jira-prompt-collapse-btn {
   font-size: 1rem;
   padding: 4px 8px;
 }
 
-.rovo-prompt-sidebar-subtitle {
+.jira-prompt-sidebar-subtitle {
   color: var(--text-muted);
   font-size: 0.75rem;
   font-style: italic;
 }
 
-.rovo-prompt-container {
+.jira-prompt-container {
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex: 1;
 }
 
-.rovo-prompt-text {
+.jira-prompt-copy-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jira-prompt-paste-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 2px;
+  min-height: 0;
+}
+
+.jira-paste-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.jira-paste-input {
   flex: 1;
   padding: 8px;
   border: 1px solid var(--border);
@@ -1487,13 +1509,39 @@ select {
   background: var(--surface-2);
   color: var(--text);
   font-family: var(--font);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  resize: none;
+  min-height: 0;
+  transition: border-color 0.15s;
+}
+
+.jira-paste-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.jira-paste-input.is-applied {
+  border-color: var(--success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.jira-prompt-text {
+  flex: 2;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-family: var(--font);
   font-size: 0.85rem;
   line-height: 1.4;
   resize: none;
-  min-height: 120px;
+  min-height: 0;
 }
 
-.rovo-prompt-text:focus {
+.jira-prompt-text:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-light);
@@ -1626,7 +1674,7 @@ select {
     right: 8px;
   }
 
-  .rovo-prompt-fab {
+  .jira-prompt-fab {
     top: 100px;
     right: 8px;
   }
@@ -1641,7 +1689,7 @@ select {
     width: min(320px, 92vw);
   }
 
-  .rovo-prompt-sidebar {
+  .jira-prompt-sidebar {
     top: 58px;
     width: min(320px, 92vw);
   }

@@ -295,22 +295,53 @@ function toggleExamplesSidebar() {
   setExamplesSidebarExpanded(!gameView.classList.contains('examples-open'));
 }
 
-function setRovoPromptSidebarExpanded(expanded) {
+function setJiraPromptSidebarExpanded(expanded) {
   const gameView = document.getElementById('view-game');
-  const sidebar = document.getElementById('rovo-prompt-sidebar');
-  const openBtn = document.getElementById('btn-toggle-rovo-prompt-float');
+  const sidebar = document.getElementById('jira-prompt-sidebar');
+  const openBtn = document.getElementById('btn-toggle-jira-prompt-float');
   if (!gameView || !sidebar || !openBtn) return;
 
-  gameView.classList.toggle('rovo-prompt-open', !!expanded);
+  gameView.classList.toggle('jira-prompt-open', !!expanded);
   sidebar.classList.toggle('is-collapsed', !expanded);
   openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   openBtn.hidden = !!expanded;
 }
 
-function toggleRovoPromptSidebar() {
+function toggleJiraPromptSidebar() {
   const gameView = document.getElementById('view-game');
   if (!gameView) return;
-  setRovoPromptSidebarExpanded(!gameView.classList.contains('rovo-prompt-open'));
+  setJiraPromptSidebarExpanded(!gameView.classList.contains('jira-prompt-open'));
+}
+
+function parseJiraPromptResponse(text) {
+  const levelToValue = { low: 1, medium: 2, high: 3 };
+  const sizeValues = [1, 2, 3, 5, 8];
+
+  const get = (label) => {
+    const match = text.match(new RegExp(`^${label}\\s*:\\s*(.+)$`, 'im'));
+    return match ? match[1].trim() : null;
+  };
+
+  const rawSize = get('Size');
+  const rawComplexity = get('Complexity');
+  const rawUncertainty = get('Uncertainty');
+  const rawCognitive = get('Cognitive Load');
+  const rawDeps = get('Dependencies');
+  const rawRisk = get('Risk');
+
+  if (!rawSize || !rawComplexity || !rawUncertainty || !rawCognitive || !rawDeps || !rawRisk) return null;
+
+  const sizeNum = parseInt(rawSize, 10);
+  const size = sizeValues.includes(sizeNum) ? sizeNum : null;
+  const complexity = levelToValue[rawComplexity.toLowerCase()];
+  const uncertainty = levelToValue[rawUncertainty.toLowerCase()];
+  const cognitive = levelToValue[rawCognitive.toLowerCase()];
+  const deps = levelToValue[rawDeps.toLowerCase()];
+  const risk = levelToValue[rawRisk.toLowerCase()];
+
+  if (!size || !complexity || !uncertainty || !cognitive || !deps || !risk) return null;
+
+  return { size, complexity, uncertainty, cognitive, deps, risk };
 }
 
 function openStoryModal() {
@@ -1764,13 +1795,26 @@ function setupEventListeners() {
   document.getElementById('btn-collapse-history').addEventListener('click', () => setHistorySidebarExpanded(false));
   document.getElementById('btn-toggle-examples-float').addEventListener('click', toggleExamplesSidebar);
   document.getElementById('btn-collapse-examples').addEventListener('click', () => setExamplesSidebarExpanded(false));
-  document.getElementById('btn-toggle-rovo-prompt-float').addEventListener('click', toggleRovoPromptSidebar);
-  document.getElementById('btn-collapse-rovo-prompt').addEventListener('click', () => setRovoPromptSidebarExpanded(false));
+  document.getElementById('btn-toggle-jira-prompt-float').addEventListener('click', toggleJiraPromptSidebar);
+  document.getElementById('btn-collapse-jira-prompt').addEventListener('click', () => setJiraPromptSidebarExpanded(false));
 
   // Copy Rovo prompt button
-  document.getElementById('btn-copy-rovo-prompt').addEventListener('click', () => {
-    const textArea = document.getElementById('rovo-prompt-text');
-    const copyBtn = document.getElementById('btn-copy-rovo-prompt');
+  document.getElementById('jira-paste-input').addEventListener('paste', (e) => {
+    // Allow the paste to land first, then parse
+    setTimeout(() => {
+      const raw = e.target.value;
+      const parsed = parseJiraPromptResponse(raw);
+      if (parsed) {
+        applyCalcSelections(parsed);
+        e.target.classList.add('is-applied');
+        setTimeout(() => e.target.classList.remove('is-applied'), 2000);
+      }
+    }, 0);
+  });
+
+  document.getElementById('btn-copy-jira-prompt').addEventListener('click', () => {
+    const textArea = document.getElementById('jira-prompt-text');
+    const copyBtn = document.getElementById('btn-copy-jira-prompt');
     if (textArea) {
       textArea.select();
       textArea.setSelectionRange(0, 99999); // For mobile devices
@@ -1791,15 +1835,15 @@ function setupEventListeners() {
     const gameView = document.getElementById('view-game');
     const historyOpen = gameView.classList.contains('history-open');
     const examplesOpen = gameView.classList.contains('examples-open');
-    const rovoPromptOpen = gameView.classList.contains('rovo-prompt-open');
-    if (!historyOpen && !examplesOpen && !rovoPromptOpen) return;
+    const jiraPromptOpen = gameView.classList.contains('jira-prompt-open');
+    if (!historyOpen && !examplesOpen && !jiraPromptOpen) return;
 
     const sidebar = document.getElementById('history-sidebar');
     const fab = document.getElementById('btn-toggle-history-float');
     const examplesSidebar = document.getElementById('examples-sidebar');
     const examplesFab = document.getElementById('btn-toggle-examples-float');
-    const rovoPromptSidebar = document.getElementById('rovo-prompt-sidebar');
-    const rovoPromptFab = document.getElementById('btn-toggle-rovo-prompt-float');
+    const jiraPromptSidebar = document.getElementById('jira-prompt-sidebar');
+    const jiraPromptFab = document.getElementById('btn-toggle-jira-prompt-float');
 
     if (historyOpen && !sidebar.contains(e.target) && !fab.contains(e.target)) {
       setHistorySidebarExpanded(false);
@@ -1809,8 +1853,8 @@ function setupEventListeners() {
       setExamplesSidebarExpanded(false);
     }
 
-    if (rovoPromptOpen && !rovoPromptSidebar.contains(e.target) && !rovoPromptFab.contains(e.target)) {
-      setRovoPromptSidebarExpanded(false);
+    if (jiraPromptOpen && !jiraPromptSidebar.contains(e.target) && !jiraPromptFab.contains(e.target)) {
+      setJiraPromptSidebarExpanded(false);
     }
   });
 

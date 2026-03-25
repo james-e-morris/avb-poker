@@ -188,10 +188,10 @@
       </button>
 
       <button
-        id="btn-toggle-rovo-prompt-float"
-        class="btn btn-ghost btn-sm rovo-prompt-fab"
+        id="btn-toggle-jira-prompt-float"
+        class="btn btn-ghost btn-sm jira-prompt-fab"
         aria-expanded="false"
-        aria-controls="rovo-prompt-sidebar"
+        aria-controls="jira-prompt-sidebar"
       >
         AI Prompt
       </button>
@@ -215,21 +215,21 @@
       </aside>
 
       <aside
-        id="rovo-prompt-sidebar"
-        class="rovo-prompt-sidebar is-collapsed"
-        aria-labelledby="rovo-prompt-sidebar-heading"
+        id="jira-prompt-sidebar"
+        class="jira-prompt-sidebar is-collapsed"
+        aria-labelledby="jira-prompt-sidebar-heading"
       >
-        <div class="rovo-prompt-sidebar-head">
-          <h3 id="rovo-prompt-sidebar-heading" class="rovo-prompt-sidebar-title">AI Prompt</h3>
-          <button id="btn-collapse-rovo-prompt" class="icon-btn rovo-prompt-collapse-btn" title="Collapse AI Prompt">
+        <div class="jira-prompt-sidebar-head">
+          <h3 id="jira-prompt-sidebar-heading" class="jira-prompt-sidebar-title">AI Prompt</h3>
+          <button id="btn-collapse-jira-prompt" class="icon-btn jira-prompt-collapse-btn" title="Collapse AI Prompt">
             →
           </button>
         </div>
-        <p class="rovo-prompt-sidebar-subtitle">
+        <p class="jira-prompt-sidebar-subtitle">
           Paste into Jira Rovo AI to estimate the story based on its description and acceptance criteria.
         </p>
-        <div class="rovo-prompt-container">
-          <textarea id="rovo-prompt-text" class="rovo-prompt-text" readonly aria-label="AI prompt for Rovo">
+        <div class="jira-prompt-container">
+          <textarea id="jira-prompt-text" class="jira-prompt-text" readonly aria-label="AI prompt for Rovo">
 You are an expert Agile estimation assistant using the AVB Planning Poker methodology.
 
 Estimate Story Points by analyzing the ticket description and acceptance criteria against 6 factors:
@@ -268,7 +268,18 @@ Multipliers: Low=1.0, Medium=1.1, High=1.2
 Raw Score = Size × C-mult × U-mult × Cog-mult × Dep-mult × Risk-mult
 Map: <1.1→1, <2.1→2, <4→3, <6→5, <10→8, <17→13, <27→21, <44→34, <72→55, ≥72→89</textarea
           >
-          <button id="btn-copy-rovo-prompt" class="btn btn-primary btn-sm">Copy</button>
+          <div class="jira-prompt-copy-row">
+            <button id="btn-copy-jira-prompt" class="btn btn-primary btn-sm">Copy</button>
+          </div>
+          <div class="jira-prompt-paste-section">
+            <label for="jira-paste-input" class="jira-paste-label">Paste Rovo response to apply ratings:</label>
+            <textarea
+              id="jira-paste-input"
+              class="jira-paste-input"
+              aria-label="Paste Rovo AI response here"
+              spellcheck="false"
+            ></textarea>
+          </div>
         </div>
       </aside>
 

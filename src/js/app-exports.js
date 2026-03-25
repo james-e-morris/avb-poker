@@ -168,22 +168,24 @@ function toggleJiraPromptSidebar() {
   setJiraPromptSidebarExpanded(!gameView.classList.contains('jira-prompt-open'));
 }
 
-// Exports for testing
-module.exports = {
-  FIBONACCI_CARDS,
-  mapToFibonacci,
-  scoreToMultiplier,
-  formatCalcNumber,
-  voteColorClass,
-  nearestFib,
-  deepClone,
-  getAblyErrorCode,
-  getAblyChannelName,
-  safeText,
-  calculateSP,
-  generateSessionId,
-  isRoomExpired,
-  parseJiraPromptResponse,
-  setJiraPromptSidebarExpanded,
-  toggleJiraPromptSidebar,
-};
+// Exports for testing (Node/Jest only)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    FIBONACCI_CARDS,
+    mapToFibonacci,
+    scoreToMultiplier,
+    formatCalcNumber,
+    voteColorClass,
+    nearestFib,
+    deepClone,
+    getAblyErrorCode,
+    getAblyChannelName,
+    safeText,
+    calculateSP,
+    generateSessionId,
+    isRoomExpired,
+    parseJiraPromptResponse,
+    setJiraPromptSidebarExpanded,
+    toggleJiraPromptSidebar,
+  };
+}

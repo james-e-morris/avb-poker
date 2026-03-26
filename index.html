@@ -320,7 +320,25 @@ Suggested Story Points: [result]
 CALCULATION:
 Multipliers: Low=1.0, Medium=1.1, High=1.2
 Raw Score = Size × C-mult × U-mult × Cog-mult × Dep-mult × Risk-mult
-Map: <1.1→1, <2.1→2, <4→3, <6→5, <10→8, <17→13, <27→21, <44→34, <72→55, ≥72→89
+
+DECISION MATRIX (use this exactly when deciding points):
+1) Compute Raw Score using the formula above.
+2) Convert Raw Score to a Fibonacci card using the same thresholds as mapToFibonacci.
+3) Do not pick a card directly from intuition without passing through the threshold map.
+
+mapToFibonacci Threshold Matrix:
+- Raw Score < 1.5  => 1
+- Raw Score < 2.5  => 2
+- Raw Score < 4.0  => 3
+- Raw Score < 6.5  => 5
+- Raw Score < 10.0 => 8
+- Raw Score < 17.0 => 13
+- Raw Score < 27.0 => 21
+- Raw Score < 44.0 => 34
+- Raw Score < 72.0 => 55
+- Raw Score >= 72.0 => 89
+
+IMPORTANT: The Suggested Story Points must be the matrix output above. If your intuition differs, revise factor ratings and recalculate until the matrix output aligns.
 
 CALIBRATION (sanity-check after calculating):
 If your Suggested Story Points from the formula doesn't match your intuitive read of the ticket, do NOT override the result directly. Instead, adjust one or more of the Low/Medium/High ratings so the formula naturally produces your expected value. For example, if the formula gives 5 but you believe it's a 3, lower one Medium to Low and recalculate — if that produces 3, use those revised ratings. Do not lower a rating if that lowering goes against your assessment. If you cannot find a rating adjustment that yields your expected value, keep the formula result as-is.</textarea

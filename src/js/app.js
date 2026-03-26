@@ -675,6 +675,13 @@ function toggleJiraPromptSidebar() {
   setJiraPromptSidebarExpanded(!gameView.classList.contains('jira-prompt-open'));
 }
 
+function clearJiraPasteInput() {
+  const pasteInput = document.getElementById('jira-paste-input');
+  if (pasteInput) {
+    pasteInput.value = '';
+  }
+}
+
 function summarizeVotes(participants) {
   const entries = Object.entries(participants || {}).sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0));
   const numericVotes = entries.map(([, p]) => parseFloat(p.vote)).filter((v) => !isNaN(v));
@@ -1146,6 +1153,7 @@ async function nextStory(storyName) {
       const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
       await ablyPublishState(channel, session);
       ablyPublishAdminAudit(session);
+      clearJiraPasteInput();
     }
   } else {
     const session = getDemoSession(sessionId);
@@ -1164,6 +1172,7 @@ async function nextStory(storyName) {
       });
       saveDemoSession(sessionId, session);
       captureAdminSessionAudit(session);
+      clearJiraPasteInput();
     }
   }
 

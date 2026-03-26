@@ -125,10 +125,10 @@ const EXAMPLE_SCENARIOS = [
 const FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];
 
 function mapToFibonacci(rawScore) {
-  if (rawScore < 1.1) return 1;
-  if (rawScore < 2.1) return 2;
+  if (rawScore < 1.5) return 1;
+  if (rawScore < 2.5) return 2;
   if (rawScore < 4) return 3;
-  if (rawScore < 6) return 5;
+  if (rawScore < 6.5) return 5;
   if (rawScore < 10) return 8;
   if (rawScore < 17) return 13;
   if (rawScore < 27) return 21;
@@ -161,10 +161,10 @@ function voteColorClass(vote) {
 }
 
 function nearestFib(avg) {
-  if (avg < 1.1) return 1;
-  if (avg < 2.1) return 2;
+  if (avg < 1.5) return 1;
+  if (avg < 2.5) return 2;
   if (avg < 4) return 3;
-  if (avg < 6) return 5;
+  if (avg < 6.5) return 5;
   if (avg < 10) return 8;
   if (avg < 17) return 13;
   if (avg < 27) return 21;

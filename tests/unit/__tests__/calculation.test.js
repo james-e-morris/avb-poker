@@ -22,6 +22,18 @@ describe('Story Point Calculation', () => {
       const result = calculateSP(1, 2, 1, 1, 1, 1);
       expect(result.rawScore).toBe(1.1);
       expect(result.multipliers.complexity).toBe(1.1);
+      expect(result.sp).toBe(1);
+    });
+
+    test('requires enough combined criteria to move from 1 to 2', () => {
+      const notEnough = calculateSP(1, 3, 1, 1, 1, 1);
+      const enough = calculateSP(1, 3, 3, 3, 1, 1);
+
+      expect(notEnough.rawScore).toBeCloseTo(1.2, 5);
+      expect(notEnough.sp).toBe(1);
+
+      expect(enough.rawScore).toBeCloseTo(1.728, 5);
+      expect(enough.sp).toBe(2);
     });
 
     test('applies all multipliers correctly', () => {

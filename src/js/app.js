@@ -1171,7 +1171,6 @@ async function returnToVoting() {
     if (!session || session.status !== 'revealed') return;
 
     session.status = 'voting';
-    session.finalDecision = null;
     removeCurrentRevealHistoryEntry(session);
 
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
@@ -1182,7 +1181,6 @@ async function returnToVoting() {
     if (!session || session.status !== 'revealed') return;
 
     session.status = 'voting';
-    session.finalDecision = null;
     removeCurrentRevealHistoryEntry(session);
     saveDemoSession(sessionId, session);
     captureAdminSessionAudit(session);
@@ -1333,10 +1331,12 @@ function handleSessionData(session) {
 
   const previousVote = state.currentVote;
   const previousStatus = state.sessionData ? state.sessionData.status : null;
+  const previousStory = safeText(state.sessionData ? state.sessionData.story : '');
   const wasRevealed = state.wasRevealed;
   const nowRevealed = session.status === 'revealed';
   const justRevealed = nowRevealed && !wasRevealed;
-  const justStartedNextStory = previousStatus === 'revealed' && session.status === 'voting';
+  const justStartedNextStory =
+    previousStatus === 'revealed' && session.status === 'voting' && previousStory !== safeText(session.story);
 
   state.sessionData = session;
   state.wasRevealed = nowRevealed;

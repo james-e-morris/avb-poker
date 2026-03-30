@@ -754,6 +754,23 @@ function applyFinalDecisionToHistory(session, value) {
   target.finalDecision = value || null;
 }
 
+function removeCurrentRevealHistoryEntry(session) {
+  const history = Array.isArray(session.resultsHistory) ? session.resultsHistory : [];
+  if (!history.length) {
+    session.currentRevealId = null;
+    return;
+  }
+
+  if (session.currentRevealId) {
+    const nextHistory = history.filter((item) => item.id !== session.currentRevealId);
+    session.resultsHistory = nextHistory.length !== history.length ? nextHistory : history.slice(1);
+  } else {
+    session.resultsHistory = history.slice(1);
+  }
+
+  session.currentRevealId = null;
+}
+
 function formatRevealTimestamp(timestamp) {
   const t = Number(timestamp);
   if (!t) return 'Unknown time';
@@ -1054,6 +1071,13 @@ async function joinSession(sessionId, userName) {
 async function castVote(value) {
   const { sessionId, userId } = state;
   if (!sessionId || !userId) return;
+
+  const localStatus = state.sessionData && state.sessionData.status;
+  if (localStatus === 'revealed') {
+    showToast('Voting is locked after reveal. Ask the moderator to return to voting.', 'info');
+    return;
+  }
+
   state.currentVote = value;
   state.questionVotePanicStartedAt = value === '?' ? Date.now() : 0;
   state.coffeeVotePourStartedAt = value === '☕' ? Date.now() : 0;
@@ -1061,6 +1085,10 @@ async function castVote(value) {
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (!session || !session.participants || !session.participants[userId]) return;
+    if (session.status === 'revealed') {
+      showToast('Voting is locked after reveal. Ask the moderator to return to voting.', 'info');
+      return;
+    }
 
     session.participants[userId].vote = value;
     session.participants[userId].hasVoted = true;
@@ -1071,6 +1099,10 @@ async function castVote(value) {
   } else {
     const session = getDemoSession(sessionId);
     if (session && session.participants && session.participants[userId]) {
+      if (session.status === 'revealed') {
+        showToast('Voting is locked after reveal. Ask the moderator to return to voting.', 'info');
+        return;
+      }
       session.participants[userId].vote = value;
       session.participants[userId].hasVoted = true;
       saveDemoSession(sessionId, session);
@@ -1128,6 +1160,35 @@ async function setFinalDecision(value) {
     saveDemoSession(sessionId, session);
     captureAdminSessionAudit(session);
   }
+}
+
+async function returnToVoting() {
+  const { sessionId } = state;
+  if (!sessionId || !state.isModerator) return;
+
+  if (state.dbMode === 'ably') {
+    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
+    if (!session || session.status !== 'revealed') return;
+
+    session.status = 'voting';
+    session.finalDecision = null;
+    removeCurrentRevealHistoryEntry(session);
+
+    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
+    await ablyPublishState(channel, session);
+    ablyPublishAdminAudit(session);
+  } else {
+    const session = getDemoSession(sessionId);
+    if (!session || session.status !== 'revealed') return;
+
+    session.status = 'voting';
+    session.finalDecision = null;
+    removeCurrentRevealHistoryEntry(session);
+    saveDemoSession(sessionId, session);
+    captureAdminSessionAudit(session);
+  }
+
+  state.suggestedFinalDecision = null;
 }
 
 async function nextStory(storyName) {
@@ -1523,6 +1584,8 @@ function updateCalcOutput() {
   const voteBtn = document.getElementById('btn-vote-calc');
   voteBtn.dataset.sp = result.sp;
   voteBtn.textContent = `Vote ${result.sp}`;
+  voteBtn.disabled = !!(state.sessionData && state.sessionData.status === 'revealed');
+  voteBtn.title = voteBtn.disabled ? 'Voting is locked after reveal' : '';
 
   // Keep Fibonacci cards visually in sync with the current calculator suggestion.
   if (document.getElementById('vote-cards')) {
@@ -2455,6 +2518,7 @@ function setupEventListeners() {
 
   // ---- Reveal / Next Story ----
   document.getElementById('btn-reveal').addEventListener('click', revealVotes);
+  document.getElementById('btn-return-voting').addEventListener('click', returnToVoting);
   document.getElementById('btn-next-story').addEventListener('click', () => {
     document.getElementById('next-story-input').value = '';
     document.getElementById('modal-next-story').removeAttribute('hidden');

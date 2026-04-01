@@ -86,6 +86,13 @@ function getRevealDisabledReason(session, isModerator, votedCount) {
   return '';
 }
 
+function getNextStoryDisabledReason(session, isModerator) {
+  if (!isModerator || !session || session.status !== 'revealed') return '';
+  const hasFinal = session.finalDecision !== null && session.finalDecision !== undefined;
+  if (!hasFinal) return 'Final pick must be selected';
+  return '';
+}
+
 function calculateSP(size, c, u, cl, d, r) {
   const complexityMultiplier = scoreToMultiplier(c);
   const uncertaintyMultiplier = scoreToMultiplier(u);
@@ -228,6 +235,7 @@ module.exports = {
   safeText,
   formatAdminStatus,
   getRevealDisabledReason,
+  getNextStoryDisabledReason,
   calculateSP,
   generateSessionId,
   isRoomExpired,

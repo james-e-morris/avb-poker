@@ -13,6 +13,7 @@ const {
   safeText,
   formatAdminStatus,
   getRevealDisabledReason,
+  getNextStoryDisabledReason,
 } = require('../../../src/js/app-exports.js');
 
 describe('Utility Functions', () => {
@@ -305,6 +306,29 @@ describe('Utility Functions', () => {
 
     test('returns empty when moderator has votes and story exists', () => {
       expect(getRevealDisabledReason({ story: 'LD-123 Add auth' }, true, 1)).toBe('');
+    });
+  });
+
+  describe('getNextStoryDisabledReason', () => {
+    test('returns empty when user is not moderator', () => {
+      expect(getNextStoryDisabledReason({ status: 'revealed', finalDecision: null }, false)).toBe('');
+    });
+
+    test('returns empty when session is missing or not revealed', () => {
+      expect(getNextStoryDisabledReason(null, true)).toBe('');
+      expect(getNextStoryDisabledReason({ status: 'voting', finalDecision: null }, true)).toBe('');
+    });
+
+    test('returns required-final-pick message when revealed and final decision missing', () => {
+      expect(getNextStoryDisabledReason({ status: 'revealed', finalDecision: null }, true)).toBe(
+        'Final pick must be selected'
+      );
+      expect(getNextStoryDisabledReason({ status: 'revealed' }, true)).toBe('Final pick must be selected');
+    });
+
+    test('returns empty when revealed and final decision is set', () => {
+      expect(getNextStoryDisabledReason({ status: 'revealed', finalDecision: 8 }, true)).toBe('');
+      expect(getNextStoryDisabledReason({ status: 'revealed', finalDecision: '13' }, true)).toBe('');
     });
   });
 });

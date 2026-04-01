@@ -843,6 +843,12 @@ function getRevealDisabledReason(session, isModerator, votedCount) {
   return '';
 }
 
+function getNextStoryDisabledReason(session, isModerator) {
+  if (!isModerator || !session || session.status !== 'revealed') return '';
+  if (!hasFinalDecision(session)) return 'Final pick must be selected';
+  return '';
+}
+
 // ---- Ably Realtime ----------------------------------------
 
 let ablyRealtime = null;
@@ -2077,9 +2083,17 @@ function showResults(session) {
   renderFinalDecisionPicker(finalDecision, state.isModerator && session.status === 'revealed');
 
   if (nextStoryBtn) {
-    const canStart = canStartNextStory(session);
-    nextStoryBtn.disabled = !canStart;
-    nextStoryBtn.title = canStart ? '' : 'Choose a Final Decision first';
+    const disabledReason = getNextStoryDisabledReason(session, state.isModerator);
+    const isDisabled = !!disabledReason;
+    nextStoryBtn.classList.toggle('is-disabled', isDisabled);
+    nextStoryBtn.setAttribute('aria-disabled', isDisabled ? 'true' : 'false');
+    if (disabledReason) {
+      nextStoryBtn.title = disabledReason;
+      nextStoryBtn.setAttribute('aria-label', disabledReason);
+    } else {
+      nextStoryBtn.removeAttribute('title');
+      nextStoryBtn.removeAttribute('aria-label');
+    }
   }
   if (revealBtn) {
     revealBtn.hidden = true;
@@ -2543,6 +2557,11 @@ function setupEventListeners() {
   });
   document.getElementById('btn-return-voting').addEventListener('click', returnToVoting);
   document.getElementById('btn-next-story').addEventListener('click', () => {
+    const disabledReason = getNextStoryDisabledReason(state.sessionData, state.isModerator);
+    if (disabledReason) {
+      showToast(disabledReason, 'error');
+      return;
+    }
     document.getElementById('next-story-input').value = '';
     document.getElementById('modal-next-story').removeAttribute('hidden');
     document.getElementById('next-story-input').focus();

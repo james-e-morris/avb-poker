@@ -541,6 +541,7 @@ select {
   align-items: center;
   gap: 8px;
   perspective: 700px;
+  position: relative;
 }
 .p-card-inner {
   position: relative;
@@ -654,6 +655,94 @@ select {
 }
 .mod-badge {
   font-size: 0.75rem;
+}
+
+.p-ranking-strip {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: -7px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px;
+  border-radius: 6px;
+  background: transparent;
+  pointer-events: auto;
+  z-index: 2;
+  transform: rotateY(180deg);
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+}
+
+.p-ranking-strip.is-muted {
+  filter: grayscale(0.45);
+  opacity: 0.7;
+}
+
+.p-ranking-chip {
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4px;
+  height: 7px;
+  font-size: 0;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  user-select: none;
+  flex: 1 1 0;
+}
+
+.p-ranking-chip[class*='size-'] {
+  width: 13px;
+  min-width: 13px;
+  height: 10px;
+  border-radius: 3px;
+  font-size: 8px;
+  color: #0f172a;
+  flex: 0 0 auto;
+}
+
+.p-ranking-chip:not([class*='size-']) {
+  border-radius: 999px;
+}
+
+.p-ranking-chip.size-1 {
+  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.p-ranking-chip.size-2 {
+  background: linear-gradient(180deg, #cffafe 0%, #a5f3fc 100%);
+}
+
+.p-ranking-chip.size-3 {
+  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.p-ranking-chip.size-5 {
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.p-ranking-chip.size-8 {
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.p-ranking-chip.low {
+  background: #6b7280;
+}
+
+.p-ranking-chip.medium {
+  background: #f59e0b;
+}
+
+.p-ranking-chip.high {
+  background: #dc2626;
+}
+
+.p-ranking-chip.unknown {
+  background: #9ca3af;
 }
 
 /* ---- Status Bar ------------------------------------------ */
@@ -2236,6 +2325,19 @@ select {
     width: 52px;
     height: 76px;
   }
+  .p-ranking-strip {
+    bottom: -6px;
+  }
+  .p-ranking-chip {
+    width: 3px;
+    height: 6px;
+  }
+  .p-ranking-chip[class*='size-'] {
+    width: 11px;
+    min-width: 11px;
+    height: 9px;
+    font-size: 7px;
+  }
   .p-name {
     max-width: 64px;
     font-size: 0.68rem;
@@ -2379,6 +2481,21 @@ select {
   .p-card-front,
   .p-card-back {
     border-radius: 6px;
+  }
+  .p-ranking-strip {
+    bottom: -6px;
+    gap: 1px;
+    padding: 1px;
+  }
+  .p-ranking-chip {
+    width: 3px;
+    height: 6px;
+  }
+  .p-ranking-chip[class*='size-'] {
+    width: 10px;
+    min-width: 10px;
+    height: 9px;
+    font-size: 7px;
   }
   .p-name {
     max-width: 56px;

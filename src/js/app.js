@@ -882,18 +882,7 @@ function normalizeRankingLevel(value) {
 }
 
 function getParticipantRankingSummary(participant) {
-  const rankingSources = [
-    participant?.rankings,
-    participant?.ranking,
-    participant?.voteRanking,
-    participant?.voteRankings,
-    participant?.voteMeta?.ranking,
-    participant?.voteMeta?.rankings,
-  ];
-
-  const ranking = rankingSources.find(
-    (candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate)
-  );
+  const ranking = getParticipantRankingData(participant);
   if (!ranking) return '';
 
   const sizeVal = ranking.size !== null && ranking.size !== undefined ? String(ranking.size) : null;
@@ -913,6 +902,114 @@ function getParticipantRankingSummary(participant) {
 
   const parts = [sizeVal || '?', ...normalizedParts.map((v) => v || '?')];
   return ` (${parts.join('-')})`;
+}
+
+function getParticipantRankingData(participant) {
+  const rankingSources = [
+    participant?.rankings,
+    participant?.ranking,
+    participant?.voteRanking,
+    participant?.voteRankings,
+    participant?.voteMeta?.ranking,
+    participant?.voteMeta?.rankings,
+  ];
+
+  return rankingSources.find((candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate));
+}
+
+function rankingLevelToNumber(value) {
+  const normalized = normalizeRankingLevel(value);
+  if (normalized === 'L') return 1;
+  if (normalized === 'M') return 2;
+  if (normalized === 'H') return 3;
+  return null;
+}
+
+function getParticipantRankingChipModel(participant, vote, overrideRankings) {
+  // Use override rankings (e.g., current user's calculator state) if provided, otherwise get stored rankings
+  let ranking = overrideRankings || getParticipantRankingData(participant);
+  if (!ranking) return null;
+
+  const sizeNum = Number(ranking.size);
+  const size = [1, 2, 3, 5, 8].includes(sizeNum) ? sizeNum : null;
+
+  const cogVal = ranking.cognitive !== undefined ? ranking.cognitive : ranking.cognitiveLoad;
+  const depVal = ranking.deps !== undefined ? ranking.deps : ranking.dependencies;
+
+  const complexity = rankingLevelToNumber(ranking.complexity);
+  const uncertainty = rankingLevelToNumber(ranking.uncertainty);
+  const cognitive = rankingLevelToNumber(cogVal);
+  const deps = rankingLevelToNumber(depVal);
+  const risk = rankingLevelToNumber(ranking.risk);
+
+  const voteNum = Number.parseFloat(vote);
+  const voteAsSize = [1, 2, 3, 5, 8].includes(voteNum) ? voteNum : null;
+  const rankingsLookDefault =
+    size === 1 && complexity === 1 && uncertainty === 1 && cognitive === 1 && deps === 1 && risk === 1;
+  const effectiveSize = rankingsLookDefault && voteAsSize ? voteAsSize : size;
+
+  const chips = [
+    { tone: effectiveSize ? `size-${effectiveSize}` : 'unknown', label: effectiveSize ? String(effectiveSize) : '?' },
+    {
+      tone: complexity === 1 ? 'low' : complexity === 2 ? 'medium' : complexity === 3 ? 'high' : 'unknown',
+    },
+    {
+      tone: uncertainty === 1 ? 'low' : uncertainty === 2 ? 'medium' : uncertainty === 3 ? 'high' : 'unknown',
+    },
+    {
+      tone: cognitive === 1 ? 'low' : cognitive === 2 ? 'medium' : cognitive === 3 ? 'high' : 'unknown',
+    },
+    {
+      tone: deps === 1 ? 'low' : deps === 2 ? 'medium' : deps === 3 ? 'high' : 'unknown',
+    },
+    {
+      tone: risk === 1 ? 'low' : risk === 2 ? 'medium' : risk === 3 ? 'high' : 'unknown',
+    },
+  ];
+
+  const hasCompleteRankings = !!(effectiveSize && complexity && uncertainty && cognitive && deps && risk);
+  const rankedSp = hasCompleteRankings
+    ? calculateSP(effectiveSize, complexity, uncertainty, cognitive, deps, risk).sp
+    : null;
+  const isVoteNumeric = !isNaN(voteNum);
+  const isAligned = rankedSp !== null && isVoteNumeric && rankedSp === voteNum;
+  const isMuted = rankedSp !== null && !isAligned;
+
+  const levelLabel = (value) => {
+    if (value === 1) return 'Low';
+    if (value === 2) return 'Med';
+    if (value === 3) return 'High';
+    return '?';
+  };
+
+  const tooltipLines = [
+    `Size: ${effectiveSize || '?'}`,
+    `Complexity: ${levelLabel(complexity)}`,
+    `Uncertainty: ${levelLabel(uncertainty)}`,
+    `Cognitive Load: ${levelLabel(cognitive)}`,
+    `Dependencies: ${levelLabel(deps)}`,
+    `Risk: ${levelLabel(risk)}`,
+  ];
+
+  if (rankedSp !== null) {
+    tooltipLines.push(`Calculated Vote: ${rankedSp}`);
+  }
+
+  if (vote !== null && vote !== undefined && String(vote) !== '') {
+    tooltipLines.push(`Actual Vote: ${vote}`);
+  }
+
+  if (isMuted) {
+    tooltipLines.push('Status: not used for vote');
+  }
+
+  const tooltip = tooltipLines.join('\n');
+
+  return {
+    chips,
+    isMuted,
+    tooltip,
+  };
 }
 
 function getCurrentRevealTimestamp(session) {
@@ -1529,7 +1626,7 @@ function handleSessionData(session) {
   const participants = session.participants || {};
 
   updateGameHeader(session);
-  renderParticipants(participants, session.status, justRevealed, nowRevealed);
+  renderParticipants(participants, session.status, justRevealed, nowRevealed, session);
   updateStatusBar(participants, session.status);
   renderSessionHistory(session.resultsHistory);
 
@@ -2030,14 +2127,26 @@ function renderParticipantName(name, isMe, isMod) {
   return wrapper;
 }
 
-function renderParticipants(participants, status, justRevealed, nowRevealed) {
+function renderParticipants(participants, status, justRevealed, nowRevealed, session) {
   const grid = document.getElementById('participants-grid');
   const entries = Object.entries(participants).sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0));
+
+  // Get current reveal entry for vote lookup if at reveal time
+  const currentRevealEntry =
+    nowRevealed && session && session.resultsHistory && session.currentRevealId
+      ? session.resultsHistory.find((item) => item && item.id === session.currentRevealId)
+      : null;
 
   // Clear and rebuild
   grid.innerHTML = '';
 
   entries.forEach(([uid, p], i) => {
+    // Ensure we have the actual vote at reveal time (lookup from history if missing)
+    let participantVote = p.vote;
+    if (nowRevealed && !participantVote && currentRevealEntry && p.hasVoted) {
+      const voteEntry = currentRevealEntry.votes?.find((v) => v.uid === uid);
+      participantVote = voteEntry?.vote || participantVote;
+    }
     const isMe = uid === state.userId;
     const isMod = state.sessionData && state.sessionData.moderatorId === uid;
 
@@ -2053,13 +2162,31 @@ function renderParticipants(participants, status, justRevealed, nowRevealed) {
     }
 
     // Back face (the vote value, hidden until flipped)
-    const back = el('div', `p-card-back ${voteColorClass(p.vote)}`);
-    const voteEl = el('span', 'p-vote-value', nowRevealed ? (p.vote ?? '—') : '');
+    const back = el('div', `p-card-back ${voteColorClass(participantVote)}`);
+    const voteEl = el('span', 'p-vote-value', nowRevealed ? (participantVote ?? '—') : '');
     back.appendChild(voteEl);
 
     inner.appendChild(front);
     inner.appendChild(back);
     wrapper.appendChild(inner);
+
+    if (nowRevealed && p.hasVoted) {
+      // For current user, use their latest calculator selections; for others, use stored rankings
+      const overrideRankings = isMe ? state.calcSelections : undefined;
+      const chipModel = getParticipantRankingChipModel(p, participantVote, overrideRankings);
+      if (chipModel) {
+        const strip = el('div', `p-ranking-strip${chipModel.isMuted ? ' is-muted' : ''}`);
+        strip.setAttribute('title', chipModel.tooltip);
+        strip.setAttribute('aria-label', chipModel.tooltip);
+
+        chipModel.chips.forEach((chip) => {
+          const chipEl = el('span', `p-ranking-chip ${chip.tone}`, chip.label);
+          strip.appendChild(chipEl);
+        });
+
+        inner.appendChild(strip);
+      }
+    }
 
     // Name row
     wrapper.appendChild(renderParticipantName(p.name, isMe, isMod));
@@ -2274,12 +2401,26 @@ function showResults(session) {
   // Vote chips
   const votesEl = document.getElementById('results-votes');
   votesEl.innerHTML = '';
-  entries.forEach(([, p]) => {
+
+  // Get current reveal entry for vote lookup
+  const currentRevealEntry =
+    session && session.resultsHistory && session.currentRevealId
+      ? session.resultsHistory.find((item) => item && item.id === session.currentRevealId)
+      : null;
+
+  entries.forEach(([uid, p]) => {
+    // Ensure we have the actual vote (lookup from history if missing)
+    let participantVote = p.vote;
+    if (!participantVote && currentRevealEntry && p.hasVoted) {
+      const voteEntry = currentRevealEntry.votes?.find((v) => v.uid === uid);
+      participantVote = voteEntry?.vote || participantVote;
+    }
+
     const chip = el('div', 'result-vote-chip');
     const name = el('span', 'rv-name');
     name.textContent = (p.name || 'Anonymous').slice(0, 16);
     const vv = el('span', 'rv-val');
-    vv.textContent = p.hasVoted ? (p.vote ?? '—') : '✗';
+    vv.textContent = p.hasVoted ? (participantVote ?? '—') : '✗';
     chip.appendChild(name);
     chip.appendChild(vv);
     votesEl.appendChild(chip);

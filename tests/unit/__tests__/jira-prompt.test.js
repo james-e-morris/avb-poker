@@ -159,6 +159,43 @@ Suggested Story Points: 8
       expect(result).not.toBeNull();
       expect(result.size).toBe(5);
     });
+
+    test('parses markdown-bold labels and italic reasons (Rovo output format)', () => {
+      const text = [
+        '**Size: 5**  ',
+        '*Touches multiple services and repositories.*',
+        '**Complexity: Medium**  ',
+        '*Requires novel logic for multiple edge cases.*',
+        '',
+        '**Uncertainty: Low**',
+        '**Cognitive Load: Medium**  ',
+        '*Requires understanding logic across two codebases.*',
+        '**Dependencies: Medium**  ',
+        '*Involves changes in two repositories.*',
+        '',
+        '**Risk: High**  ',
+        '*Incorrect implementation could cause critical errors.*',
+        '',
+        '---',
+        '',
+        '**Suggested Story Points: 8**  ',
+        '*Multi-area change with moderate technical challenge.*',
+      ].join('\n');
+      const result = parseJiraPromptResponse(text);
+      expect(result).not.toBeNull();
+      expect(result.size).toBe(5);
+      expect(result.complexity).toBe(2);
+      expect(result.uncertainty).toBe(1);
+      expect(result.cognitive).toBe(2);
+      expect(result.deps).toBe(2);
+      expect(result.risk).toBe(3);
+      expect(result.sizeReason).toBe('Touches multiple services and repositories.');
+      expect(result.complexityReason).toBe('Requires novel logic for multiple edge cases.');
+      expect(result.uncertaintyReason).toBeNull();
+      expect(result.cognitiveReason).toBe('Requires understanding logic across two codebases.');
+      expect(result.depsReason).toBe('Involves changes in two repositories.');
+      expect(result.riskReason).toBe('Incorrect implementation could cause critical errors.');
+    });
   });
 
   describe('missing fields — returns null', () => {

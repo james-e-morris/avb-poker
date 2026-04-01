@@ -281,19 +281,32 @@ function parseJiraPromptResponse(text) {
   const levelToValue = { low: 1, medium: 2, high: 3 };
   const sizeValues = [1, 2, 3, 5, 8];
 
-  const lines = text.split(/\r?\n/);
+  // Strip markdown bold/italic formatting to support Rovo's markdown output style
+  const cleaned = text.replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/\*([^*\n]+)\*/g, '$1');
+
+  const lines = cleaned.split(/\r?\n/);
 
   const get = (label) => {
-    const match = text.match(new RegExp(`^${label}\\s*:\\s*(.+)$`, 'im'));
+    const match = cleaned.match(new RegExp(`^${label}\\s*:\\s*(.+)$`, 'im'));
     return match ? match[1].trim() : null;
   };
+
+  const knownLabelPattern =
+    /^(Size|Complexity|Uncertainty|Cognitive Load|Dependencies|Risk|Suggested Story Points)\s*:/i;
 
   const getReason = (label) => {
     const labelRegex = new RegExp(`^${label}\\s*:`, 'i');
     for (let i = 0; i < lines.length - 1; i++) {
       if (labelRegex.test(lines[i].trim())) {
-        const reasonMatch = lines[i + 1].match(/^\s*-\s+(.+)$/);
-        return reasonMatch ? reasonMatch[1].trim() : null;
+        const nextLine = lines[i + 1];
+        const dashMatch = nextLine.match(/^\s*-\s+(.+)$/);
+        if (dashMatch) return dashMatch[1].trim();
+        // Also accept a plain text line (e.g. markdown-stripped italic from Rovo)
+        const plainText = nextLine.trim();
+        if (plainText && !knownLabelPattern.test(plainText) && !plainText.startsWith('---')) {
+          return plainText;
+        }
+        return null;
       }
     }
     return null;

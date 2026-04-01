@@ -1605,6 +1605,10 @@ select {
   gap: 12px;
 }
 
+#btn-copy-audit {
+  margin-left: auto;
+}
+
 .results-final-value {
   font-size: 1.1rem;
   font-weight: 800;

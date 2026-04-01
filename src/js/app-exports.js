@@ -93,6 +93,148 @@ function getNextStoryDisabledReason(session, isModerator) {
   return '';
 }
 
+function normalizeRankingLevel(value) {
+  if (value === null || value === undefined || value === '') return null;
+
+  const numeric = Number(value);
+  if (!isNaN(numeric)) {
+    if (numeric === 1) return 'L';
+    if (numeric === 2) return 'M';
+    if (numeric === 3) return 'H';
+    return String(value);
+  }
+
+  const lowered = String(value).trim().toLowerCase();
+  if (!lowered) return null;
+  if (lowered === 'low' || lowered === 'l') return 'L';
+  if (lowered === 'medium' || lowered === 'med' || lowered === 'm') return 'M';
+  if (lowered === 'high' || lowered === 'h') return 'H';
+  return String(value).trim();
+}
+
+function getParticipantRankingSummary(participant) {
+  const rankingSources = [
+    participant?.rankings,
+    participant?.ranking,
+    participant?.voteRanking,
+    participant?.voteRankings,
+    participant?.voteMeta?.ranking,
+    participant?.voteMeta?.rankings,
+  ];
+
+  const ranking = rankingSources.find(
+    (candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate)
+  );
+  if (!ranking) return '';
+
+  const sizeVal = ranking.size !== null && ranking.size !== undefined ? String(ranking.size) : null;
+
+  const cogVal = ranking.cognitive !== undefined ? ranking.cognitive : ranking.cognitiveLoad;
+  const depVal = ranking.deps !== undefined ? ranking.deps : ranking.dependencies;
+
+  const normalizedParts = [
+    normalizeRankingLevel(ranking.complexity),
+    normalizeRankingLevel(ranking.uncertainty),
+    normalizeRankingLevel(cogVal),
+    normalizeRankingLevel(depVal),
+    normalizeRankingLevel(ranking.risk),
+  ];
+
+  if (!sizeVal && normalizedParts.every((v) => !v)) return '';
+
+  const parts = [sizeVal || '?', ...normalizedParts.map((v) => v || '?')];
+  return ` (${parts.join('-')})`;
+}
+
+function summarizeVotesForAudit(participants) {
+  const entries = Object.entries(participants || {}).sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0));
+  const numericVotes = entries.map(([, p]) => parseFloat(p.vote)).filter((v) => !isNaN(v));
+  const avg = numericVotes.length ? numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length : null;
+  const distinctNumericVotes = numericVotes.length ? new Set(numericVotes).size : 0;
+  const isConsensus = numericVotes.length > 0 && distinctNumericVotes === 1;
+
+  return {
+    entries,
+    avg,
+    isConsensus,
+    distinctNumericVotes,
+    nearest: avg !== null ? nearestFib(avg) : null,
+  };
+}
+
+function getCurrentRevealTimestamp(session) {
+  const history = Array.isArray(session?.resultsHistory) ? session.resultsHistory : [];
+  const current = session?.currentRevealId
+    ? history.find((item) => item && item.id === session.currentRevealId)
+    : history[0];
+  return Number(current?.revealedAt || Date.now());
+}
+
+function formatAuditTimestampEst(timestamp) {
+  const t = Number(timestamp);
+  const date = new Date(isNaN(t) ? Date.now() : t);
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute} EST`;
+}
+
+function buildAuditClipboardText(session, sessionId) {
+  if (!session || session.status !== 'revealed') return '';
+
+  const participants = session.participants || {};
+  const summary = summarizeVotesForAudit(participants);
+  const votedEntries = summary.entries.filter(([, p]) => !!p?.hasVoted);
+  const totalCount = summary.entries.length;
+  const votedCount = votedEntries.length;
+  const revealEst = formatAuditTimestampEst(getCurrentRevealTimestamp(session));
+
+  const hasFinalDecision = session.finalDecision !== null && session.finalDecision !== undefined;
+  const finalText = hasFinalDecision ? `**${session.finalDecision} SP**` : 'Not set';
+  const avgText = summary.avg !== null ? summary.avg.toFixed(1) : '—';
+  const consensusText =
+    summary.distinctNumericVotes === 0 ? 'No votes' : summary.isConsensus ? 'Consensus Reached' : 'No Consensus';
+  const nearestText = summary.avg !== null ? `${summary.nearest} SP` : '—';
+
+  const votesLines = votedEntries
+    .map(([, participant]) => {
+      const name = safeText(participant?.name || 'Anonymous') || 'Anonymous';
+      const vote = participant?.vote ?? '—';
+      return `    - ${name}: ${vote}${getParticipantRankingSummary(participant)}`;
+    })
+    .join('\n');
+
+  const storyText = safeText(session.story) || 'Untitled story';
+
+  return [
+    '#### AVB Planning Poker Results',
+    '- Story name: **' + storyText + '**',
+    '- Final: ' + finalText,
+    '- Stats: Avg ' +
+      avgText +
+      ' | ' +
+      consensusText +
+      ' | Near ' +
+      nearestText +
+      ' | Voted ' +
+      votedCount +
+      '/' +
+      totalCount,
+    '- Votes: ',
+    votesLines || '    - none',
+  ].join('\n');
+}
+
 function calculateSP(size, c, u, cl, d, r) {
   const complexityMultiplier = scoreToMultiplier(c);
   const uncertaintyMultiplier = scoreToMultiplier(u);
@@ -236,6 +378,7 @@ module.exports = {
   formatAdminStatus,
   getRevealDisabledReason,
   getNextStoryDisabledReason,
+  buildAuditClipboardText,
   calculateSP,
   generateSessionId,
   isRoomExpired,

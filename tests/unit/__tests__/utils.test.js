@@ -14,6 +14,7 @@ const {
   formatAdminStatus,
   getRevealDisabledReason,
   getNextStoryDisabledReason,
+  buildAuditClipboardText,
 } = require('../../../src/js/app-exports.js');
 
 describe('Utility Functions', () => {
@@ -331,6 +332,73 @@ describe('Utility Functions', () => {
     test('returns empty when revealed and final decision is set', () => {
       expect(getNextStoryDisabledReason({ status: 'revealed', finalDecision: 8 }, true)).toBe('');
       expect(getNextStoryDisabledReason({ status: 'revealed', finalDecision: '13' }, true)).toBe('');
+    });
+  });
+
+  describe('buildAuditClipboardText', () => {
+    test('returns empty string when session is not revealed', () => {
+      const session = {
+        status: 'voting',
+        participants: {
+          u1: { name: 'Alice', vote: '5', hasVoted: true, joinedAt: 1 },
+        },
+      };
+
+      expect(buildAuditClipboardText(session, 'ABC123')).toBe('');
+    });
+
+    test('includes concise summary and only voted participants', () => {
+      const session = {
+        status: 'revealed',
+        story: 'LD-123 Add auth',
+        finalDecision: 8,
+        currentRevealId: 'r1',
+        resultsHistory: [{ id: 'r1', revealedAt: Date.parse('2026-01-01T12:00:00.000Z') }],
+        participants: {
+          u1: { name: 'Alice', vote: '5', hasVoted: true, joinedAt: 1 },
+          u2: { name: 'Bob', vote: '8', hasVoted: true, joinedAt: 2 },
+          u3: { name: 'Carol', vote: null, hasVoted: false, joinedAt: 3 },
+        },
+      };
+
+      const text = buildAuditClipboardText(session, 'ABC123');
+
+      expect(text).toContain('#### AVB Planning Poker Results');
+      expect(text).toContain('- Story name: **LD-123 Add auth**');
+      expect(text).toContain('- Final: **8 SP**');
+      expect(text).toContain('- Stats: Avg 6.5 | No Consensus | Near 8 SP | Voted 2/3');
+      expect(text).toContain('    - Alice: 5');
+      expect(text).toContain('    - Bob: 8');
+      expect(text).not.toContain('Carol');
+    });
+
+    test('includes ranking details when participant ranking metadata exists', () => {
+      const session = {
+        status: 'revealed',
+        story: 'Ranking test',
+        finalDecision: null,
+        resultsHistory: [{ id: 'r1', revealedAt: Date.parse('2026-01-01T12:00:00.000Z') }],
+        participants: {
+          u1: {
+            name: 'Alice',
+            vote: '13',
+            hasVoted: true,
+            joinedAt: 1,
+            rankings: {
+              size: 3,
+              complexity: 'high',
+              uncertainty: 'medium',
+              cognitive: 2,
+              deps: 'low',
+              risk: 1,
+            },
+          },
+        },
+      };
+
+      const text = buildAuditClipboardText(session, 'XYZ789');
+      expect(text).toContain('#### AVB Planning Poker Results');
+      expect(text).toContain('    - Alice: 13 (3-H-M-M-L-L)');
     });
   });
 });

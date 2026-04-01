@@ -2394,6 +2394,22 @@ function showResults(session) {
       nextStoryBtn.removeAttribute('aria-label');
     }
   }
+
+  const copyAuditBtn = document.getElementById('btn-copy-audit');
+  if (copyAuditBtn) {
+    const disabledReason = getNextStoryDisabledReason(session, state.isModerator);
+    const isDisabled = !!disabledReason;
+    copyAuditBtn.classList.toggle('is-disabled', isDisabled);
+    copyAuditBtn.setAttribute('aria-disabled', isDisabled ? 'true' : 'false');
+    if (disabledReason) {
+      copyAuditBtn.title = disabledReason;
+      copyAuditBtn.setAttribute('aria-label', disabledReason);
+    } else {
+      copyAuditBtn.removeAttribute('title');
+      copyAuditBtn.removeAttribute('aria-label');
+    }
+  }
+
   if (revealBtn) {
     revealBtn.hidden = true;
   }
@@ -2871,6 +2887,14 @@ function setupEventListeners() {
     revealVotes();
   });
   document.getElementById('btn-return-voting').addEventListener('click', returnToVoting);
+  document.getElementById('btn-copy-audit').addEventListener('click', () => {
+    const disabledReason = getNextStoryDisabledReason(state.sessionData, state.isModerator);
+    if (disabledReason) {
+      showToast(disabledReason, 'error');
+      return;
+    }
+    copyAuditToClipboard();
+  });
   document.getElementById('btn-next-story').addEventListener('click', () => {
     const disabledReason = getNextStoryDisabledReason(state.sessionData, state.isModerator);
     if (disabledReason) {

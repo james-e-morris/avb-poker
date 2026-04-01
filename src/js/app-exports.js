@@ -80,6 +80,12 @@ function formatAdminStatus(record) {
   return hasFinal ? `${record.finalDecision} SP` : 'voting';
 }
 
+function getRevealDisabledReason(session, isModerator, votedCount) {
+  if (!isModerator || votedCount <= 0) return '';
+  if (!safeText(session && session.story)) return 'Story name must be provided';
+  return '';
+}
+
 function calculateSP(size, c, u, cl, d, r) {
   const complexityMultiplier = scoreToMultiplier(c);
   const uncertaintyMultiplier = scoreToMultiplier(u);
@@ -221,6 +227,7 @@ module.exports = {
   getAblyChannelName,
   safeText,
   formatAdminStatus,
+  getRevealDisabledReason,
   calculateSP,
   generateSessionId,
   isRoomExpired,

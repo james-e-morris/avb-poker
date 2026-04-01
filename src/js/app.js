@@ -17,7 +17,6 @@ const state = {
   demoPoller: null,
   unsubAbly: null,
   pendingSession: null,
-  initialStoryPromptChecked: false,
   calcSelections: {
     size: 1,
     complexity: 1,
@@ -838,6 +837,12 @@ function openStoryModal() {
   storyInput.focus();
 }
 
+function getRevealDisabledReason(session, isModerator, votedCount) {
+  if (!isModerator || votedCount <= 0) return '';
+  if (!safeText(session && session.story)) return 'Story name must be provided';
+  return '';
+}
+
 // ---- Ably Realtime ----------------------------------------
 
 let ablyRealtime = null;
@@ -1342,14 +1347,6 @@ function handleSessionData(session) {
   state.wasRevealed = nowRevealed;
   state.isModerator = session.moderatorId === state.userId;
   captureAdminSessionAudit(session);
-
-  if (!state.initialStoryPromptChecked) {
-    state.initialStoryPromptChecked = true;
-    const missingStory = !(session.story || '').trim();
-    if (state.isModerator && session.status === 'voting' && missingStory) {
-      openStoryModal();
-    }
-  }
 
   const participants = session.participants || {};
 
@@ -2180,7 +2177,28 @@ function updateFooter(participants, status) {
   document.getElementById('vote-count-label').textContent = `${voted} of ${total} voted`;
 
   const revealBtn = document.getElementById('btn-reveal');
-  revealBtn.hidden = !(state.isModerator && voted > 0);
+  const isVisible = state.isModerator && voted > 0;
+  revealBtn.hidden = !isVisible;
+
+  if (!isVisible) {
+    revealBtn.classList.remove('is-disabled');
+    revealBtn.removeAttribute('title');
+    revealBtn.removeAttribute('aria-label');
+    revealBtn.setAttribute('aria-disabled', 'false');
+    return;
+  }
+
+  const disabledReason = getRevealDisabledReason(state.sessionData, state.isModerator, voted);
+  const isDisabled = !!disabledReason;
+  revealBtn.classList.toggle('is-disabled', isDisabled);
+  revealBtn.setAttribute('aria-disabled', isDisabled ? 'true' : 'false');
+  if (disabledReason) {
+    revealBtn.title = disabledReason;
+    revealBtn.setAttribute('aria-label', disabledReason);
+  } else {
+    revealBtn.removeAttribute('title');
+    revealBtn.removeAttribute('aria-label');
+  }
 }
 
 // ---- Navigation --------------------------------------------
@@ -2198,7 +2216,6 @@ async function enterGame(sessionId) {
     showView('game');
     setHistorySidebarExpanded(false);
     setExamplesSidebarExpanded(false);
-    state.initialStoryPromptChecked = false;
     syncCalcLabelWidth();
     setCalcDetailsExpanded(false);
     subscribeToSession(sessionId);
@@ -2227,7 +2244,6 @@ function leaveGame() {
   state.sessionData = null;
   state.currentVote = null;
   state.wasRevealed = false;
-  state.initialStoryPromptChecked = false;
   renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);
   showView('home');
@@ -2517,7 +2533,14 @@ function setupEventListeners() {
   });
 
   // ---- Reveal / Next Story ----
-  document.getElementById('btn-reveal').addEventListener('click', revealVotes);
+  document.getElementById('btn-reveal').addEventListener('click', () => {
+    const disabledReason = getRevealDisabledReason(state.sessionData, state.isModerator, 1);
+    if (disabledReason) {
+      showToast(disabledReason, 'error');
+      return;
+    }
+    revealVotes();
+  });
   document.getElementById('btn-return-voting').addEventListener('click', returnToVoting);
   document.getElementById('btn-next-story').addEventListener('click', () => {
     document.getElementById('next-story-input').value = '';

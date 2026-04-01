@@ -12,6 +12,7 @@ const {
   getAblyChannelName,
   safeText,
   formatAdminStatus,
+  getRevealDisabledReason,
 } = require('../../../src/js/app-exports.js');
 
 describe('Utility Functions', () => {
@@ -285,6 +286,25 @@ describe('Utility Functions', () => {
     test('returns formatted SP label when finalDecision exists', () => {
       expect(formatAdminStatus({ finalDecision: 8 })).toBe('8 SP');
       expect(formatAdminStatus({ finalDecision: '13' })).toBe('13 SP');
+    });
+  });
+
+  describe('getRevealDisabledReason', () => {
+    test('returns empty when user is not moderator', () => {
+      expect(getRevealDisabledReason({ story: '' }, false, 3)).toBe('');
+    });
+
+    test('returns empty when there are no votes yet', () => {
+      expect(getRevealDisabledReason({ story: '' }, true, 0)).toBe('');
+    });
+
+    test('returns required-story message when moderator has votes but story is blank', () => {
+      expect(getRevealDisabledReason({ story: '   ' }, true, 2)).toBe('Story name must be provided');
+      expect(getRevealDisabledReason(null, true, 2)).toBe('Story name must be provided');
+    });
+
+    test('returns empty when moderator has votes and story exists', () => {
+      expect(getRevealDisabledReason({ story: 'LD-123 Add auth' }, true, 1)).toBe('');
     });
   });
 });

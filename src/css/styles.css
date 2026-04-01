@@ -159,6 +159,17 @@ select {
   cursor: not-allowed;
   transform: none !important;
 }
+.btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+.btn-primary.is-disabled:hover,
+.btn-secondary.is-disabled:hover,
+.btn-ghost.is-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
 .icon-btn {
   background: none;
   border: none;

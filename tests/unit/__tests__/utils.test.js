@@ -20,9 +20,10 @@ describe('Utility Functions', () => {
   describe('mapToFibonacci', () => {
     test('maps values in each bucket', () => {
       expect(mapToFibonacci(0)).toBe(1);
-      expect(mapToFibonacci(1.49)).toBe(1);
-      expect(mapToFibonacci(1.5)).toBe(2);
-      expect(mapToFibonacci(3.9)).toBe(3);
+      expect(mapToFibonacci(1.39)).toBe(1);
+      expect(mapToFibonacci(1.4)).toBe(2);
+      expect(mapToFibonacci(3.89)).toBe(3);
+      expect(mapToFibonacci(3.9)).toBe(5);
       expect(mapToFibonacci(6.4)).toBe(5);
       expect(mapToFibonacci(9.9)).toBe(8);
       expect(mapToFibonacci(16.9)).toBe(13);
@@ -33,9 +34,9 @@ describe('Utility Functions', () => {
     });
 
     test('maps threshold boundaries to the next bucket', () => {
-      expect(mapToFibonacci(1.5)).toBe(2);
+      expect(mapToFibonacci(1.4)).toBe(2);
       expect(mapToFibonacci(2.5)).toBe(3);
-      expect(mapToFibonacci(4)).toBe(5);
+      expect(mapToFibonacci(3.9)).toBe(5);
       expect(mapToFibonacci(6.5)).toBe(8);
       expect(mapToFibonacci(10)).toBe(13);
       expect(mapToFibonacci(17)).toBe(21);
@@ -133,7 +134,7 @@ describe('Utility Functions', () => {
     test('returns mapped value across buckets', () => {
       expect(nearestFib(0)).toBe(1);
       expect(nearestFib(1)).toBe(1);
-      expect(nearestFib(1.49)).toBe(1);
+      expect(nearestFib(1.39)).toBe(1);
       expect(nearestFib(2)).toBe(2);
       expect(nearestFib(4)).toBe(5);
       expect(nearestFib(6)).toBe(5);
@@ -145,9 +146,10 @@ describe('Utility Functions', () => {
     });
 
     test('handles decimal boundary transitions', () => {
-      expect(nearestFib(1.5)).toBe(2);
+      expect(nearestFib(1.4)).toBe(2);
       expect(nearestFib(2.5)).toBe(3);
-      expect(nearestFib(3.99)).toBe(3);
+      expect(nearestFib(3.89)).toBe(3);
+      expect(nearestFib(3.9)).toBe(5);
       expect(nearestFib(4.5)).toBe(5);
       expect(nearestFib(6.49)).toBe(5);
       expect(nearestFib(6.5)).toBe(8);

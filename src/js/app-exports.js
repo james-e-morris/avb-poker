@@ -7,9 +7,9 @@ const TEST_FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '5
 
 // Raw score -> Suggested SP mapping (range-based)
 function mapToFibonacci(rawScore) {
-  if (rawScore < 1.5) return 1;
+  if (rawScore < 1.4) return 1;
   if (rawScore < 2.5) return 2;
-  if (rawScore < 4) return 3;
+  if (rawScore < 3.9) return 3;
   if (rawScore < 6.5) return 5;
   if (rawScore < 10) return 8;
   if (rawScore < 17) return 13;
@@ -43,9 +43,9 @@ function voteColorClass(vote) {
 }
 
 function nearestFib(avg) {
-  if (avg < 1.5) return 1;
+  if (avg < 1.4) return 1;
   if (avg < 2.5) return 2;
-  if (avg < 4) return 3;
+  if (avg < 3.9) return 3;
   if (avg < 6.5) return 5;
   if (avg < 10) return 8;
   if (avg < 17) return 13;

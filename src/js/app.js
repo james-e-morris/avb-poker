@@ -2110,6 +2110,7 @@ function updateGameHeader(session) {
   document.querySelectorAll('.participant-only').forEach((node) => {
     node.style.display = state.isModerator ? 'none' : '';
   });
+  document.getElementById('game-story-display').classList.toggle('story-value--editable', !!state.isModerator);
 }
 
 function renderParticipantName(name, isMe, isMod) {
@@ -2854,6 +2855,10 @@ function setupEventListeners() {
   // ---- Story Edit ----
   document.getElementById('btn-edit-story').addEventListener('click', () => {
     openStoryModal();
+  });
+
+  document.getElementById('game-story-display').addEventListener('click', () => {
+    if (state.isModerator) openStoryModal();
   });
 
   document.getElementById('btn-story-cancel').addEventListener('click', () => {

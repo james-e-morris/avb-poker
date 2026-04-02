@@ -516,6 +516,13 @@ select {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.story-value--editable {
+  cursor: pointer;
+}
+.story-value--editable:hover {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+}
 
 /* ---- Participants ----------------------------------------- */
 .participants-section {

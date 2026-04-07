@@ -1,0 +1,70 @@
+name: Feedback
+description: Share product feedback, UX ideas, and improvements for AVB Planning Poker.
+title: "Feedback: AVB Planning Poker"
+labels:
+  - feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing feedback.
+
+        Please include enough detail for us to understand the problem or idea.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, or what would you like to improve?
+      placeholder: Briefly describe your feedback.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Page/Area
+      description: Where did you experience this?
+      options:
+        - Home
+        - Loading
+        - Game
+        - AI Prompt Sidebar
+        - History Sidebar
+        - Examples Sidebar
+        - Session Management
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce (optional)
+      description: If this is a bug, list steps so we can reproduce it.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Screenshots/Context (optional)
+      description: Add screenshots, browser info, or extra context.

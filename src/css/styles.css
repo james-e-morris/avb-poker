@@ -242,6 +242,12 @@ select {
   top: 0;
   z-index: var(--z-sticky-header);
 }
+
+.home-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .logo {
   display: flex;
   align-items: center;
@@ -424,6 +430,7 @@ select {
   justify-content: center;
   gap: 16px;
 }
+
 .loading-wrap {
   display: flex;
   flex-direction: column;
@@ -1919,6 +1926,47 @@ select {
   color: var(--text-muted);
   font-size: 0.75rem;
   font-style: italic;
+}
+
+.feedback-link {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.feedback-link:visited {
+  color: var(--text-muted);
+}
+
+.feedback-link:hover,
+.feedback-link:focus-visible {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.7;
+}
+
+.jira-prompt-feedback {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.jira-prompt-feedback a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.jira-prompt-feedback a:hover,
+.jira-prompt-feedback a:focus-visible {
+  color: var(--text);
 }
 
 .jira-prompt-container {

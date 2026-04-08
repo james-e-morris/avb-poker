@@ -34,8 +34,6 @@ body:
         - Examples Sidebar
         - Session Management
         - Other
-    validations:
-      required: true
 
   - type: textarea
     id: steps
@@ -52,16 +50,12 @@ body:
     attributes:
       label: Expected behavior
       placeholder: What did you expect to happen?
-    validations:
-      required: true
 
   - type: textarea
     id: actual
     attributes:
       label: Actual behavior
       placeholder: What happened instead?
-    validations:
-      required: true
 
   - type: textarea
     id: context

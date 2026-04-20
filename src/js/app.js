@@ -1916,7 +1916,7 @@ function updateCalcConfidenceMessage() {
   if (!container || !summary || !feedback) return;
 
   const assessment = state.aiConfidence;
-  if (!assessment || assessment.score >= 8) {
+  if (!assessment || assessment.score >= 7) {
     container.hidden = true;
     container.classList.remove('is-warning', 'is-error');
     summary.textContent = '';
@@ -1924,7 +1924,7 @@ function updateCalcConfidenceMessage() {
     return;
   }
 
-  const isError = assessment.score <= 4;
+  const isError = assessment.score <= 3;
   container.hidden = false;
   container.classList.toggle('is-warning', !isError);
   container.classList.toggle('is-error', isError);

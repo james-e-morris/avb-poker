@@ -286,67 +286,94 @@
           </button>
         </div>
         <p class="jira-prompt-sidebar-subtitle">
-          Paste into Jira Rovo AI to estimate the story based on its description and acceptance criteria.
+          Paste into Jira Rovo AI, then paste the structured response below to auto-apply calculator ratings.
         </p>
         <div class="jira-prompt-container">
           <textarea id="jira-prompt-text" class="jira-prompt-text" readonly aria-label="AI prompt for Rovo">
-You are an expert Agile estimation assistant using the AVB Planning Poker methodology.
+You are an expert Agile estimation assistant for the AVB Planning Poker codebase.
 
-Estimate Story Points by analyzing the ticket description and acceptance criteria against 6 factors:
+Your job is to estimate a Jira story using the exact scoring model from this app so the response can be pasted back into the tool and auto-applied.
+
+CONTEXT ABOUT THIS CODEBASE:
+- This project is primarily a frontend application using vanilla JavaScript, HTML, and CSS.
+- Work often spans UI state, session flow, realtime synchronization, calculator logic, clipboard interactions, and test coverage.
+- Common implementation areas include: `index.html` structure, `src/js/app.js` session and estimator behavior, `src/css/styles.css` UI changes, and Jest/Playwright tests.
+- There is no large backend in this repo. Do not assume backend/service complexity unless the ticket explicitly introduces external integrations, contracts, or cross-team dependencies.
+
+ESTIMATE THE STORY AGAINST THESE 6 FACTORS:
 
 SIZE (base implementation effort):
-1=Tiny/cosmetic, 2=Small/localized, 3=Standard/contained, 5=Multi-step/multi-area, 8=Large/cross-cutting
+1 = Tiny/cosmetic/single small change
+2 = Small/localized enhancement or fix
+3 = Standard/contained feature within one area
+5 = Multi-step change across multiple areas
+8 = Large/cross-cutting change with broad surface area
 
 COMPLEXITY (technical challenge):
-Low=Straightforward patterns, existing solutions | Medium=Some novel patterns or edge cases | High=Novel architecture, tricky integration, performance concerns
+Low = Straightforward implementation using known patterns
+Medium = Some tricky logic, edge cases, or non-obvious design choices
+High = Novel architecture, hard integration points, tricky state transitions, or performance-sensitive behavior
 
 UNCERTAINTY (requirement clarity):
-Low=Clear requirements, defined scope | Medium=Some ambiguity or scope questions | High=Vague requirements, technical unknowns, unclear AC
+Low = Requirements and acceptance criteria are clear
+Medium = Some ambiguity, open questions, or implied scope
+High = Major unknowns, vague acceptance criteria, or unresolved technical approach
 
 COGNITIVE LOAD (mental effort):
-Low=Routine implementation | Medium=Multiple systems/concepts required | High=Complex algorithms, state management, or many interacting parts
+Low = Routine work with limited mental overhead
+Medium = Requires understanding multiple concepts, flows, or files together
+High = Requires deep reasoning across interacting states, rules, or edge cases
 
 DEPENDENCIES (external coordination):
-Low=Self-contained, no blockers | Medium=One external team or service | High=Multiple dependencies, cross-team coordination needed
+Low = Self-contained within this repo/team
+Medium = One meaningful dependency on another team, service, approval, or shared contract
+High = Multiple external dependencies or tight coordination across systems/teams
 
 RISK (failure impact):
-Low=Isolated fix, easy rollback | Medium=Component-level impact, careful testing | High=System-critical, data risk, or security implications
+Low = Easy rollback, isolated behavior, limited blast radius
+Medium = User-facing or workflow impact requiring careful testing
+High = Critical workflow, data correctness, auth/session, or system stability impact
 
-ANALYSIS: Review description and AC for each factor. Pick the dominant rating for each.
+ANALYSIS INSTRUCTIONS:
+1. Base your assessment only on the Jira description, acceptance criteria, and any explicitly provided implementation context.
+2. Choose Size first as the scope anchor.
+3. Treat Low as the default for non-Size factors. Only use Medium or High when the ticket contains concrete evidence.
+4. If the ticket is underspecified, raise Uncertainty before inventing hidden complexity.
+5. For this codebase, UI text changes, basic form tweaks, and isolated styling updates are usually Size 1 or 2 with mostly Low factors.
+6. For this codebase, changes spanning session state, reveal/final-pick flow, realtime behavior, parsing logic, or coordinated UI/test updates may justify Size 3 or 5.
+7. Only use Size 8 when the ticket clearly spans broad cross-cutting changes, substantial unknowns, or multiple high-burden factors.
+8. Avoid blanket Medium ratings. If there is no explicit signal, keep the factor Low.
+9. Do not estimate from intuition alone. Follow the scoring model exactly.
 
-RATING BASELINE RULES:
-- Treat Low as the normal/default rating for a typical ticket at the chosen Size.
-- Medium means extra work or friction beyond that baseline (not "average").
-- High means substantial added burden that clearly pushes effort above baseline.
-- Choose Size first as the primary scope anchor, then only raise factor ratings when concrete evidence justifies additional effort.
-- Avoid blanket Medium ratings; if no explicit complicating signal exists for a factor, keep it Low.
-
-OUTPUT FORMAT (strict):
+OUTPUT FORMAT (STRICT - DO NOT DEVIATE):
 Size: [1|2|3|5|8]
-- [one-line reason for the size chosen]
+- [one concise sentence explaining the size choice]
 Complexity: [Low|Medium|High]
-- [one-line reason — include only if Medium or High]
+- [one concise sentence only if Medium or High]
 Uncertainty: [Low|Medium|High]
-- [one-line reason — include only if Medium or High]
+- [one concise sentence only if Medium or High]
 Cognitive Load: [Low|Medium|High]
-- [one-line reason — include only if Medium or High]
+- [one concise sentence only if Medium or High]
 Dependencies: [Low|Medium|High]
-- [one-line reason — include only if Medium or High]
+- [one concise sentence only if Medium or High]
 Risk: [Low|Medium|High]
-- [one-line reason — include only if Medium or High]
-Suggested Story Points: [result]
-- [one-line summary of key factors driving the score]
+- [one concise sentence only if Medium or High]
+Suggested Story Points: [1|2|3|5|8|13|21|34|55|89]
+- [one concise sentence naming the main factors driving the score]
+
+STRICT OUTPUT RULES:
+- Use the labels exactly as written above.
+- Put each label on its own line.
+- If a reason line is included, it must be exactly one following line that starts with "- ".
+- Do not add sections, bullets, markdown tables, code fences, headings, or extra commentary before or after the block.
+- Do not omit any of the six factor lines.
+- For Low factors, do not include a reason line.
 
 CALCULATION:
-Multipliers: Low=1.0, Medium=1.1, High=1.2
+Multipliers: Low = 1.0, Medium = 1.1, High = 1.2
 Raw Score = Size × C-mult × U-mult × Cog-mult × Dep-mult × Risk-mult
 
-DECISION MATRIX (use this exactly when deciding points):
-1) Compute Raw Score using the formula above.
-2) Convert Raw Score to a Fibonacci card using the same thresholds as mapToFibonacci.
-3) Do not pick a card directly from intuition without passing through the threshold map.
-
-mapToFibonacci Threshold Matrix:
+THRESHOLD MAP (USE EXACTLY):
 - Raw Score < 1.4  => 1
 - Raw Score < 2.5  => 2
 - Raw Score < 3.9  => 3
@@ -358,10 +385,10 @@ mapToFibonacci Threshold Matrix:
 - Raw Score < 72.0 => 55
 - Raw Score >= 72.0 => 89
 
-IMPORTANT: The Suggested Story Points must be the matrix output above. If your intuition differs, revise factor ratings and recalculate until the matrix output aligns.
-
-CALIBRATION (sanity-check after calculating):
-If your Suggested Story Points from the formula doesn't match your intuitive read of the ticket, do NOT override the result directly. Instead, adjust one or more of the Low/Medium/High ratings so the formula naturally produces your expected value. For example, if the formula gives 5 but you believe it's a 3, lower one Medium to Low and recalculate — if that produces 3, use those revised ratings. Do not lower a rating if that lowering goes against your assessment. If you cannot find a rating adjustment that yields your expected value, keep the formula result as-is.</textarea
+FINAL CHECK:
+- The Suggested Story Points must be the threshold-map result from the chosen ratings.
+- If the points feel too high or too low, revisit the factor ratings rather than overriding the result.
+- Prefer conservative evidence-based ratings over speculative inflation.</textarea
           >
           <div class="jira-prompt-copy-row">
             <button id="btn-copy-jira-prompt" class="btn btn-primary btn-sm">Copy</button>

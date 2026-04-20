@@ -25,6 +25,10 @@ Risk: Medium
 - incorrect behavior would affect end users
 Suggested Story Points: 8
 - size 5 base with four medium-rated factors
+Confidence: 6
+Confidence Feedback:
+Acceptance criteria describe the happy path but omit failure handling.
+Testing expectations and integration boundaries are not fully specified.
 `.trim();
 
   describe('valid inputs', () => {
@@ -44,6 +48,9 @@ Suggested Story Points: 8
         risk: 2,
         riskReason: 'incorrect behavior would affect end users',
         spReason: 'size 5 base with four medium-rated factors',
+        confidence: 6,
+        confidenceFeedback:
+          'Acceptance criteria describe the happy path but omit failure handling.\nTesting expectations and integration boundaries are not fully specified.',
       });
     });
 
@@ -64,6 +71,8 @@ Suggested Story Points: 8
         risk: 1,
         riskReason: null,
         spReason: null,
+        confidence: null,
+        confidenceFeedback: null,
       });
     });
 
@@ -84,6 +93,8 @@ Suggested Story Points: 8
         risk: 3,
         riskReason: null,
         spReason: null,
+        confidence: null,
+        confidenceFeedback: null,
       });
     });
 
@@ -180,6 +191,10 @@ Suggested Story Points: 8
         '',
         '**Suggested Story Points: 8**  ',
         '*Multi-area change with moderate technical challenge.*',
+        '**Confidence: 4**',
+        '**Confidence Feedback:**',
+        'Ticket lacks concrete acceptance criteria for failure and recovery behavior.',
+        'There is not enough detail about impacted services.',
       ].join('\n');
       const result = parseJiraPromptResponse(text);
       expect(result).not.toBeNull();
@@ -195,6 +210,52 @@ Suggested Story Points: 8
       expect(result.cognitiveReason).toBe('Requires understanding logic across two codebases.');
       expect(result.depsReason).toBe('Involves changes in two repositories.');
       expect(result.riskReason).toBe('Incorrect implementation could cause critical errors.');
+      expect(result.confidence).toBe(4);
+      expect(result.confidenceFeedback).toBe(
+        'Ticket lacks concrete acceptance criteria for failure and recovery behavior.\nThere is not enough detail about impacted services.'
+      );
+    });
+
+    test('parses confidence feedback when provided on multiple lines', () => {
+      const text = [
+        'Size: 3',
+        '- contained feature with a couple of related updates',
+        'Complexity: Medium',
+        '- requires careful state handling',
+        'Uncertainty: Medium',
+        '- acceptance criteria are missing error states',
+        'Cognitive Load: Low',
+        'Dependencies: Low',
+        'Risk: Low',
+        'Suggested Story Points: 5',
+        '- medium complexity and some ambiguity raise the estimate',
+        'Confidence: 5',
+        'Confidence Feedback:',
+        'The happy path is clear, but empty, loading, and error states are not described.',
+        'The ticket should also clarify whether automated tests are expected.',
+      ].join('\n');
+      const result = parseJiraPromptResponse(text);
+      expect(result.confidence).toBe(5);
+      expect(result.confidenceFeedback).toBe(
+        'The happy path is clear, but empty, loading, and error states are not described.\nThe ticket should also clarify whether automated tests are expected.'
+      );
+    });
+
+    test('ignores invalid confidence values without failing the whole parse', () => {
+      const text = [
+        'Size: 2',
+        'Complexity: Low',
+        'Uncertainty: Low',
+        'Cognitive Load: Low',
+        'Dependencies: Low',
+        'Risk: Low',
+        'Confidence: 12',
+        'Confidence Feedback:',
+        'This value is out of range and should not be trusted.',
+      ].join('\n');
+      const result = parseJiraPromptResponse(text);
+      expect(result.confidence).toBeNull();
+      expect(result.confidenceFeedback).toBe('This value is out of range and should not be trusted.');
     });
   });
 
@@ -324,6 +385,8 @@ Suggested Story Points: 8
         'cognitiveReason',
         'complexity',
         'complexityReason',
+        'confidence',
+        'confidenceFeedback',
         'deps',
         'depsReason',
         'risk',
@@ -400,6 +463,13 @@ describe('parseJiraPromptResponse reason sub-bullets', () => {
     expect(result.depsReason).toBeNull();
     expect(result.riskReason).toBe('affects critical billing flow');
     expect(result.spReason).toBe('elevated by uncertainty and risk');
+  });
+
+  test('returns null confidence and feedback when omitted', () => {
+    const text = `Size: 1\nComplexity: Low\nUncertainty: Low\nCognitive Load: Low\nDependencies: Low\nRisk: Low`;
+    const result = parseJiraPromptResponse(text);
+    expect(result.confidence).toBeNull();
+    expect(result.confidenceFeedback).toBeNull();
   });
 });
 

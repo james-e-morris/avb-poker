@@ -292,7 +292,7 @@ function parseJiraPromptResponse(text) {
   };
 
   const knownLabelPattern =
-    /^(Size|Complexity|Uncertainty|Cognitive Load|Dependencies|Risk|Suggested Story Points)\s*:/i;
+    /^(Size|Complexity|Uncertainty|Cognitive Load|Dependencies|Risk|Suggested Story Points|Confidence|Confidence Feedback)\s*:/i;
 
   const getReason = (label) => {
     const labelRegex = new RegExp(`^${label}\\s*:`, 'i');
@@ -312,12 +312,40 @@ function parseJiraPromptResponse(text) {
     return null;
   };
 
+  const getBlockText = (label) => {
+    const labelRegex = new RegExp(`^${label}\s*:\s*(.*)$`, 'i');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(labelRegex);
+      if (!match) continue;
+
+      const blockLines = [];
+      const firstLine = match[1].trim();
+      if (firstLine) blockLines.push(firstLine);
+
+      for (let j = i + 1; j < lines.length; j++) {
+        const candidate = lines[j];
+        const trimmed = candidate.trim();
+        if (knownLabelPattern.test(trimmed) || trimmed.startsWith('---')) break;
+        blockLines.push(trimmed);
+      }
+
+      while (blockLines.length && !blockLines[0]) blockLines.shift();
+      while (blockLines.length && !blockLines[blockLines.length - 1]) blockLines.pop();
+
+      return blockLines.join('\n').trim() || null;
+    }
+
+    return null;
+  };
+
   const rawSize = get('Size');
   const rawComplexity = get('Complexity');
   const rawUncertainty = get('Uncertainty');
   const rawCognitive = get('Cognitive Load');
   const rawDeps = get('Dependencies');
   const rawRisk = get('Risk');
+  const rawConfidence = get('Confidence');
 
   if (!rawSize || !rawComplexity || !rawUncertainty || !rawCognitive || !rawDeps || !rawRisk) return null;
 
@@ -338,6 +366,10 @@ function parseJiraPromptResponse(text) {
   const depsReason = deps > 1 ? getReason('Dependencies') : null;
   const riskReason = risk > 1 ? getReason('Risk') : null;
   const spReason = getReason('Suggested Story Points');
+  const confidenceNum = rawConfidence ? parseInt(rawConfidence, 10) : null;
+  const confidence =
+    Number.isInteger(confidenceNum) && confidenceNum >= 1 && confidenceNum <= 10 ? confidenceNum : null;
+  const confidenceFeedback = getBlockText('Confidence Feedback');
 
   return {
     size,
@@ -353,6 +385,8 @@ function parseJiraPromptResponse(text) {
     risk,
     riskReason,
     spReason,
+    confidence,
+    confidenceFeedback,
   };
 }
 

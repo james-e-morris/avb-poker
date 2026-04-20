@@ -1027,8 +1027,8 @@ select {
 /* ---- Calculator ------------------------------------------ */
 .calculator {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  align-items: start;
   flex: 0 0 auto;
   padding: 12px 14px;
   gap: 10px;
@@ -1052,6 +1052,7 @@ select {
   max-width: none;
   margin: 0;
   overflow: visible;
+  align-content: start;
 }
 .calc-row {
   display: grid;
@@ -1482,9 +1483,13 @@ select {
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 14px;
-  min-width: 220px;
+  min-width: 0;
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  align-self: start;
 }
 
 #calc-details {
@@ -1504,6 +1509,111 @@ select {
 #btn-toggle-calc-details {
   order: 4;
 }
+.calc-confidence-message {
+  order: 5;
+  border-radius: var(--r);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.calc-confidence-message[hidden] {
+  display: none;
+}
+
+.calc-confidence-message.is-warning {
+  border-color: color-mix(in srgb, var(--warning) 60%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+
+.calc-confidence-message.is-error {
+  border-color: color-mix(in srgb, var(--error) 60%, var(--border));
+  background: color-mix(in srgb, var(--error) 10%, var(--surface));
+}
+
+.calc-confidence-summary {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.calc-confidence-message.is-warning .calc-confidence-summary {
+  color: var(--warning);
+}
+
+.calc-confidence-message.is-error .calc-confidence-summary {
+  color: var(--error);
+}
+
+.calc-confidence-feedback {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.calc-confidence-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  white-space: normal;
+}
+
+.calc-confidence-paragraph {
+  margin: 0;
+}
+
+.calc-confidence-sources {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.calc-confidence-sources-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.calc-confidence-sources-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+}
+
+.calc-confidence-sources-list li {
+  min-width: 0;
+}
+
+.calc-confidence-sources-list a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.calc-confidence-source-link {
+  font-weight: 600;
+}
+
+.calc-confidence-sources-list a:hover,
+.calc-confidence-sources-list a:focus-visible {
+  color: var(--text);
+}
+
 .calc-result-grid {
   display: grid;
   grid-template-columns: 1fr;

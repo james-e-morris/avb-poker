@@ -345,6 +345,19 @@ ANALYSIS INSTRUCTIONS:
 8. Avoid blanket Medium ratings. If there is no explicit signal, keep the factor Low.
 9. Do not estimate from intuition alone. Follow the scoring model exactly.
 
+CONFIDENCE CALIBRATION RULES:
+1. Confidence should reflect how complete and reliable the available evidence is, not simply whether the score is high.
+2. Uncertainty and Confidence are related but not identical:
+- If Uncertainty is Medium/High for clear requirement gaps that are already captured in the factor rating, do not automatically force very low Confidence.
+- Only reduce Confidence further when there are additional unresolved ambiguities that materially affect implementation scope, acceptance criteria interpretation, or integration behavior.
+3. Avoid double-counting the same uncertainty signal twice:
+- Do not lower Confidence and also restate the exact same point unless new impact detail is provided.
+4. Confidence guidance:
+- 8-10: Requirements are sufficiently specific for reliable estimation, even if the work is large.
+- 5-7: Some meaningful unknowns remain, but estimate is still directionally reliable.
+- 1-4: Major missing detail makes the estimate weak or highly volatile.
+5. Confidence Feedback should explain what is missing beyond the already-scored Uncertainty signal, or confirm why confidence remains strong despite non-Low Uncertainty.
+
 OUTPUT FORMAT (STRICT - DO NOT DEVIATE):
 Size: [1|2|3|5|8]
 - [one concise sentence explaining the size choice]
@@ -360,11 +373,29 @@ Risk: [Low|Medium|High]
 - [one concise sentence only if Medium or High]
 Suggested Story Points: [1|2|3|5|8|13|21|34|55|89]
 - [one concise sentence naming the main factors driving the score]
+Confidence: [1-10]
+Confidence Feedback:
+[line 1]
+[line 2 if needed]
+Sources:
+1. [Short source name] - [URL]
+2. [Short source name] - [URL]
 
 STRICT OUTPUT RULES:
 - Use the labels exactly as written above.
 - Put each label on its own line.
 - If a reason line is included, it must be exactly one following line that starts with "- ".
+- `Confidence Feedback:` must be followed by one or more plain-text lines explaining what ticket detail is missing or why the estimate is dependable.
+- If sources are included, provide them under `Sources:` using numbered lines with a short name plus URL.
+- Source names must be specific and human-readable, not generic labels like `Jira Backlog` or `Confluence Page`.
+- For Jira sources, use the exact issue key and issue summary/title when available.
+- For Confluence sources, use the exact page title.
+- Preferred examples:
+- `1. LD-1065 [BE] - LeaseDomain.API - NTV POST Vacate Form - https://...`
+- `2. LD Phase 2: Notice to Vacate (POST Vacate Form) - https://...`
+- Use stable numbering (`1.`, `2.`, `3.`) and do not repeat citation markers like `[2][2]` in feedback text.
+- Do not output a second `Sources:` section. Include sources only once.
+- Do not repeat unnamed raw URL lists when named source lines are already provided.
 - Do not add sections, bullets, markdown tables, code fences, headings, or extra commentary before or after the block.
 - Do not omit any of the six factor lines.
 - For Low factors, do not include a reason line.
@@ -388,7 +419,8 @@ THRESHOLD MAP (USE EXACTLY):
 FINAL CHECK:
 - The Suggested Story Points must be the threshold-map result from the chosen ratings.
 - If the points feel too high or too low, revisit the factor ratings rather than overriding the result.
-- Prefer conservative evidence-based ratings over speculative inflation.</textarea
+- Prefer conservative evidence-based ratings over speculative inflation.
+</textarea
           >
           <div class="jira-prompt-copy-row">
             <button id="btn-copy-jira-prompt" class="btn btn-primary btn-sm">Copy</button>
@@ -554,6 +586,10 @@ FINAL CHECK:
                   <span class="factor-math" id="out-factor-risk">1 => x1</span>
                 </div>
               </div>
+            </div>
+            <div id="calc-confidence-message" class="calc-confidence-message" hidden aria-live="polite">
+              <div id="calc-confidence-summary" class="calc-confidence-summary"></div>
+              <div id="calc-confidence-feedback" class="calc-confidence-feedback"></div>
             </div>
           </div>
         </div>

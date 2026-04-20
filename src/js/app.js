@@ -25,11 +25,14 @@ const state = {
     deps: 1,
     risk: 1,
   },
+  rovoConfidence: null,
   selectedExampleId: null,
   suggestedFinalDecision: null, // highlighted but not selected Final Pick
   questionVotePanicStartedAt: 0,
   coffeeVotePourStartedAt: 0,
 };
+
+const CALC_METRIC_KEYS = ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'];
 
 const ADMIN_UID = 'u_4005191935_1395682239';
 const ADMIN_HISTORY_KEY = 'pp_admin_history_v1';
@@ -605,7 +608,7 @@ function parseJiraPromptResponse(text) {
   };
 
   const knownLabelPattern =
-    /^(Size|Complexity|Uncertainty|Cognitive Load|Dependencies|Risk|Suggested Story Points)\s*:/i;
+    /^(Size|Complexity|Uncertainty|Cognitive Load|Dependencies|Risk|Suggested Story Points|Confidence|Confidence Feedback)\s*:/i;
 
   const getReason = (label) => {
     const labelRegex = new RegExp(`^${label}\\s*:`, 'i');
@@ -625,12 +628,40 @@ function parseJiraPromptResponse(text) {
     return null;
   };
 
+  const getBlockText = (label) => {
+    const labelRegex = new RegExp(`^${label}\\s*:\\s*(.*)$`, 'i');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(labelRegex);
+      if (!match) continue;
+
+      const blockLines = [];
+      const firstLine = match[1].trim();
+      if (firstLine) blockLines.push(firstLine);
+
+      for (let j = i + 1; j < lines.length; j++) {
+        const candidate = lines[j];
+        const trimmed = candidate.trim();
+        if (knownLabelPattern.test(trimmed) || trimmed.startsWith('---')) break;
+        blockLines.push(trimmed);
+      }
+
+      while (blockLines.length && !blockLines[0]) blockLines.shift();
+      while (blockLines.length && !blockLines[blockLines.length - 1]) blockLines.pop();
+
+      return blockLines.join('\n').trim() || null;
+    }
+
+    return null;
+  };
+
   const rawSize = get('Size');
   const rawComplexity = get('Complexity');
   const rawUncertainty = get('Uncertainty');
   const rawCognitive = get('Cognitive Load');
   const rawDeps = get('Dependencies');
   const rawRisk = get('Risk');
+  const rawConfidence = get('Confidence');
 
   if (!rawSize || !rawComplexity || !rawUncertainty || !rawCognitive || !rawDeps || !rawRisk) return null;
 
@@ -651,6 +682,10 @@ function parseJiraPromptResponse(text) {
   const depsReason = deps > 1 ? getReason('Dependencies') : null;
   const riskReason = risk > 1 ? getReason('Risk') : null;
   const spReason = getReason('Suggested Story Points');
+  const confidenceNum = rawConfidence ? parseInt(rawConfidence, 10) : null;
+  const confidence =
+    Number.isInteger(confidenceNum) && confidenceNum >= 1 && confidenceNum <= 10 ? confidenceNum : null;
+  const confidenceFeedback = getBlockText('Confidence Feedback');
 
   return {
     size,
@@ -666,6 +701,8 @@ function parseJiraPromptResponse(text) {
     risk,
     riskReason,
     spReason,
+    confidence,
+    confidenceFeedback,
   };
 }
 
@@ -691,7 +728,11 @@ function clearJiraPasteInput() {
   const pasteInput = document.getElementById('jira-paste-input');
   if (pasteInput) {
     pasteInput.value = '';
+    pasteInput.classList.remove('is-applied');
   }
+
+  state.rovoConfidence = null;
+  updateCalcConfidenceMessage();
 }
 
 function summarizeVotes(participants) {
@@ -1676,6 +1717,7 @@ function handleSessionData(session) {
 
 function resetCalculatorSelectionsToDefault() {
   state.suggestedFinalDecision = null;
+  state.rovoConfidence = null;
   applyCalcSelections({
     size: 1,
     complexity: 1,
@@ -1686,11 +1728,241 @@ function resetCalculatorSelectionsToDefault() {
   });
 }
 
-function applyCalcSelections(nextSelections) {
+function normalizeRovoConfidenceAssessment(assessment) {
+  const scoreNum = parseInt(assessment?.score, 10);
+  if (!Number.isInteger(scoreNum) || scoreNum < 1 || scoreNum > 10) return null;
+
+  const feedback = String(assessment?.feedback || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n');
+
+  return {
+    score: scoreNum,
+    feedback,
+  };
+}
+
+function dedupeDuplicateCitationMarkers(text) {
+  return String(text || '').replace(/(\[\d+\])(?:\s*\1)+/g, '$1');
+}
+
+function normalizeSourceUrl(rawUrl) {
+  if (!rawUrl) return '';
+
+  return String(rawUrl)
+    .trim()
+    .replace(/(?:\[\d+\])+$/g, '')
+    .replace(/[)\],.;:]+$/g, '');
+}
+
+function dedupeUrlCandidates(urls) {
+  const seen = new Set();
+  const deduped = [];
+
+  urls.forEach((candidate) => {
+    const normalized = normalizeSourceUrl(candidate);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    deduped.push(normalized);
+  });
+
+  return deduped;
+}
+
+function getSourceDisplayName(label, url, ordinal) {
+  const normalizedLabel = String(label || '').trim();
+  if (normalizedLabel) return normalizedLabel;
+
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.replace(/\/$/, '');
+    const tail = decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
+    if (tail) return tail.replace(/[+_-]+/g, ' ');
+    return parsed.hostname;
+  } catch (_) {
+    return `Source ${ordinal}`;
+  }
+}
+
+function sanitizeSourceLabel(label) {
+  return String(label || '')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\b\d+\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseConfidenceSources(lines) {
+  const parsed = [];
+  const seen = new Set();
+  let hasNamedSource = false;
+
+  lines.forEach((line, idx) => {
+    const cleanedLine = String(line || '').trim();
+    if (!cleanedLine) return;
+    if (/^sources\s*:/i.test(cleanedLine)) return;
+
+    const urlMatches = dedupeUrlCandidates(cleanedLine.match(/https?:\/\/\S+/gi) || []);
+    if (!urlMatches.length) return;
+
+    const primaryUrl = urlMatches[0];
+    if (!primaryUrl || seen.has(primaryUrl)) return;
+
+    const firstRawUrl = cleanedLine.match(/https?:\/\/\S+/i)?.[0] || primaryUrl;
+    const urlStartIdx = cleanedLine.indexOf(firstRawUrl);
+    const prefix = urlStartIdx >= 0 ? cleanedLine.slice(0, urlStartIdx) : '';
+    const suffix = urlStartIdx >= 0 ? cleanedLine.slice(urlStartIdx + firstRawUrl.length) : '';
+    const label = `${prefix} ${suffix}`
+      .replace(/^\s*(?:[-*]|\d+[.)])\s*/, '')
+      .replace(/[\s:|\-–—]+$/, '')
+      .replace(/\bhttps?:\/\/\S+/gi, '')
+      .trim();
+    const cleanLabel = sanitizeSourceLabel(label);
+
+    const isNamed = !!cleanLabel;
+    if (hasNamedSource && !isNamed) return;
+    if (isNamed) hasNamedSource = true;
+
+    seen.add(primaryUrl);
+    parsed.push({
+      url: primaryUrl,
+      label: getSourceDisplayName(cleanLabel, primaryUrl, parsed.length + 1 || idx + 1),
+    });
+  });
+
+  return parsed;
+}
+
+function renderConfidenceFeedback(feedbackEl, rawText) {
+  feedbackEl.textContent = '';
+
+  const text = String(rawText || '').trim();
+  if (!text) {
+    return;
+  }
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const sourceIdx = lines.findIndex((line) => /^sources\s*:/i.test(line));
+  const summaryLines = sourceIdx >= 0 ? lines.slice(0, sourceIdx) : lines;
+
+  if (summaryLines.length) {
+    const summaryEl = document.createElement('div');
+    summaryEl.className = 'calc-confidence-summary-text';
+
+    const cleanedSummary = dedupeDuplicateCitationMarkers(summaryLines.join('\n'));
+    cleanedSummary
+      .split(/\r?\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        const paragraph = document.createElement('p');
+        paragraph.className = 'calc-confidence-paragraph';
+        paragraph.textContent = line;
+        summaryEl.appendChild(paragraph);
+      });
+
+    feedbackEl.appendChild(summaryEl);
+  }
+
+  if (sourceIdx < 0) {
+    return;
+  }
+
+  const sourceLines = lines.slice(sourceIdx + 1);
+  const sources = parseConfidenceSources(sourceLines);
+
+  if (!sources.length) {
+    return;
+  }
+
+  const sourcesWrap = document.createElement('div');
+  sourcesWrap.className = 'calc-confidence-sources';
+
+  const sourcesLabel = document.createElement('div');
+  sourcesLabel.className = 'calc-confidence-sources-label';
+  sourcesLabel.textContent = 'Sources';
+  sourcesWrap.appendChild(sourcesLabel);
+
+  const list = document.createElement('ol');
+  list.className = 'calc-confidence-sources-list';
+
+  sources.forEach((source) => {
+    const li = document.createElement('li');
+    const anchor = document.createElement('a');
+    anchor.className = 'calc-confidence-source-link';
+    anchor.href = source.url;
+    anchor.textContent = source.label;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+
+    li.appendChild(anchor);
+    list.appendChild(li);
+  });
+
+  sourcesWrap.appendChild(list);
+  feedbackEl.appendChild(sourcesWrap);
+}
+
+function updateCalcConfidenceMessage() {
+  const container = document.getElementById('calc-confidence-message');
+  const summary = document.getElementById('calc-confidence-summary');
+  const feedback = document.getElementById('calc-confidence-feedback');
+  if (!container || !summary || !feedback) return;
+
+  const assessment = state.rovoConfidence;
+  if (!assessment || assessment.score >= 8) {
+    container.hidden = true;
+    container.classList.remove('is-warning', 'is-error');
+    summary.textContent = '';
+    feedback.textContent = '';
+    return;
+  }
+
+  const isError = assessment.score <= 4;
+  container.hidden = false;
+  container.classList.toggle('is-warning', !isError);
+  container.classList.toggle('is-error', isError);
+  summary.textContent = `Rovo confidence ${assessment.score}/10`;
+  renderConfidenceFeedback(
+    feedback,
+    assessment.feedback || 'Rovo indicated the ticket needs more detail before the estimate should be trusted.'
+  );
+}
+
+function clearRovoConfidenceIfPasteEmpty() {
+  const pasteInput = document.getElementById('jira-paste-input');
+  if (!pasteInput) return;
+  if (pasteInput.value.trim()) return;
+
+  pasteInput.classList.remove('is-applied');
+  state.rovoConfidence = null;
+  updateCalcConfidenceMessage();
+}
+
+function applyCalcSelections(nextSelections, options = {}) {
+  const selectionUpdates = CALC_METRIC_KEYS.reduce((acc, key) => {
+    if (nextSelections[key] !== undefined) {
+      acc[key] = Number(nextSelections[key]);
+    }
+    return acc;
+  }, {});
+
   state.calcSelections = {
     ...state.calcSelections,
-    ...nextSelections,
+    ...selectionUpdates,
   };
+
+  if (options.source === 'rovo') {
+    state.rovoConfidence = normalizeRovoConfidenceAssessment(options.rovoConfidence);
+  } else if (!options.preserveRovoConfidence) {
+    state.rovoConfidence = null;
+  }
 
   document.querySelectorAll('.scale-buttons').forEach((group) => {
     const metric = group.dataset.metric;
@@ -1858,6 +2130,8 @@ function updateCalcOutput() {
   voteBtn.textContent = `Vote ${result.sp}`;
   voteBtn.disabled = !!(state.sessionData && state.sessionData.status === 'revealed');
   voteBtn.title = voteBtn.disabled ? 'Voting is locked after reveal' : '';
+
+  updateCalcConfidenceMessage();
 
   // Keep Fibonacci cards visually in sync with the current calculator suggestion.
   if (document.getElementById('vote-cards')) {
@@ -2745,7 +3019,13 @@ function setupEventListeners() {
       const raw = e.target.value;
       const parsed = parseJiraPromptResponse(raw);
       if (parsed) {
-        applyCalcSelections(parsed);
+        applyCalcSelections(parsed, {
+          source: 'rovo',
+          rovoConfidence: {
+            score: parsed.confidence,
+            feedback: parsed.confidenceFeedback,
+          },
+        });
 
         // If votes are revealed, highlight the suggested Final Pick without selecting it
         const isRevealed = state.wasRevealed || (state.sessionData && state.sessionData.status === 'revealed');
@@ -2768,13 +3048,35 @@ function setupEventListeners() {
     }, 0);
   });
 
-  document.getElementById('btn-copy-jira-prompt').addEventListener('click', () => {
+  document.getElementById('jira-paste-input').addEventListener('input', () => {
+    clearRovoConfidenceIfPasteEmpty();
+  });
+
+  document.getElementById('btn-copy-jira-prompt').addEventListener('click', async () => {
     const textArea = document.getElementById('jira-prompt-text');
     const copyBtn = document.getElementById('btn-copy-jira-prompt');
     if (textArea) {
-      textArea.select();
-      textArea.setSelectionRange(0, 99999); // For mobile devices
-      document.execCommand('copy');
+      const promptWithSubmitPadding = `${textArea.value.replace(/\s*$/, '')}\n\n\n`;
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(promptWithSubmitPadding);
+        } else {
+          const tmp = document.createElement('textarea');
+          tmp.value = promptWithSubmitPadding;
+          tmp.style.position = 'fixed';
+          tmp.style.opacity = '0';
+          document.body.appendChild(tmp);
+          tmp.focus();
+          tmp.select();
+          tmp.setSelectionRange(0, tmp.value.length);
+          document.execCommand('copy');
+          document.body.removeChild(tmp);
+        }
+      } catch (err) {
+        showToast('Could not copy AI prompt', 'error');
+        return;
+      }
 
       // Provide visual feedback
       const originalText = copyBtn.textContent;

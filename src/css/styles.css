@@ -1468,11 +1468,11 @@ select {
 
 [data-theme='dark'] .size-scale .scale-btn.is-selected {
   border-color: var(--primary);
-  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
-  color: #e0f2fe;
+  background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);
+  color: #f5f3ff;
   box-shadow:
     0 0 0 2px rgba(139, 92, 246, 0.58),
-    0 8px 16px rgba(2, 132, 199, 0.35),
+    0 8px 16px rgba(109, 40, 217, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 

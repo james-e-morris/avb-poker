@@ -286,21 +286,16 @@
           </button>
         </div>
         <p class="jira-prompt-sidebar-subtitle">
-          Paste into Jira AI, then paste the structured response below to auto-apply calculator ratings.
+          Copy the prompt, run it in any AI assistant, then paste the structured response below to auto-apply calculator
+          ratings.
         </p>
         <div class="jira-prompt-container">
           <textarea id="jira-prompt-text" class="jira-prompt-text" readonly aria-label="AI prompt">
-You are an expert Agile estimation assistant for the AVB Planning Poker codebase.
+You are an expert Agile estimation assistant.
 
-Your job is to estimate a Jira story using the exact scoring model from this app so the response can be pasted back into the tool and auto-applied.
+Your job is to estimate a work item using the exact scoring model below so the response can be pasted back into AVB Planning Poker and auto-applied.
 
-CONTEXT ABOUT THIS CODEBASE:
-- This project is primarily a frontend application using vanilla JavaScript, HTML, and CSS.
-- Work often spans UI state, session flow, realtime synchronization, calculator logic, clipboard interactions, and test coverage.
-- Common implementation areas include: `index.html` structure, `src/js/app.js` session and estimator behavior, `src/css/styles.css` UI changes, and Jest/Playwright tests.
-- There is no large backend in this repo. Do not assume backend/service complexity unless the ticket explicitly introduces external integrations, contracts, or cross-team dependencies.
-
-ESTIMATE THE STORY AGAINST THESE 6 FACTORS:
+ESTIMATE THE WORK ITEM AGAINST THESE 6 FACTORS:
 
 SIZE (base implementation effort):
 1 = Tiny/cosmetic/single small change
@@ -335,13 +330,13 @@ Medium = User-facing or workflow impact requiring careful testing
 High = Critical workflow, data correctness, auth/session, or system stability impact
 
 ANALYSIS INSTRUCTIONS:
-1. Base your assessment only on the Jira description, acceptance criteria, and any explicitly provided implementation context.
+1. Base your assessment only on the work item description, acceptance criteria, and any explicitly provided implementation context.
 2. Choose Size first as the scope anchor.
-3. Treat Low as the default for non-Size factors. Only use Medium or High when the ticket contains concrete evidence.
-4. If the ticket is underspecified, raise Uncertainty before inventing hidden complexity.
-5. For this codebase, UI text changes, basic form tweaks, and isolated styling updates are usually Size 1 or 2 with mostly Low factors.
-6. For this codebase, changes spanning session state, reveal/final-pick flow, realtime behavior, parsing logic, or coordinated UI/test updates may justify Size 3 or 5.
-7. Only use Size 8 when the ticket clearly spans broad cross-cutting changes, substantial unknowns, or multiple high-burden factors.
+3. Treat Low as the default for non-Size factors. Only use Medium or High when the work item contains concrete evidence.
+4. If the work item is underspecified, raise Uncertainty before inventing hidden complexity.
+5. Simple, isolated changes (copy, single-field config, cosmetic tweaks) are typically Size 1–2 with mostly Low factors.
+6. Changes spanning multiple areas, flows, or dependencies typically justify Size 3–5.
+7. Only use Size 8 when the change is clearly broad and cross-cutting.
 8. Avoid blanket Medium ratings. If there is no explicit signal, keep the factor Low.
 9. Do not estimate from intuition alone. Follow the scoring model exactly.
 
@@ -387,12 +382,12 @@ STRICT OUTPUT RULES:
 - If a reason line is included, it must be exactly one following line that starts with "- ".
 - `Confidence Feedback:` must be followed by one or more plain-text lines explaining what ticket detail is missing or why the estimate is dependable.
 - If sources are included, provide them under `Sources:` using numbered lines with a short name plus URL.
-- Source names must be specific and human-readable, not generic labels like `Jira Backlog` or `Confluence Page`.
-- For Jira sources, use the exact issue key and issue summary/title when available.
-- For Confluence sources, use the exact page title.
+- Source names must be specific and human-readable, not generic labels like `Backlog Item` or `Documentation Page`.
+- Use a short name that clearly identifies the specific document, ticket, or page.
 - Preferred examples:
-- `1. LD-1065 [BE] - LeaseDomain.API - NTV POST Vacate Form - https://...`
-- `2. LD Phase 2: Notice to Vacate (POST Vacate Form) - https://...`
+- `1. PROJ-123 Add retry logic to payment service - https://...`
+- `2. Architecture Decision: Auth flow redesign - https://...`
+- `3. Q3 Requirements: Notification overhaul - https://...`
 - Use stable numbering (`1.`, `2.`, `3.`) and do not repeat citation markers like `[2][2]` in feedback text.
 - Do not output a second `Sources:` section. Include sources only once.
 - Do not repeat unnamed raw URL lists when named source lines are already provided.
@@ -420,6 +415,14 @@ FINAL CHECK:
 - The Suggested Story Points must be the threshold-map result from the chosen ratings.
 - If the points feel too high or too low, revisit the factor ratings rather than overriding the result.
 - Prefer conservative evidence-based ratings over speculative inflation.
+
+WORK ITEM TO ESTIMATE:
+[Paste the story, ticket, or effort description here if the AI does not have access]
+
+Optional: include brief context about your project's tech stack, architecture, or common work patterns to improve accuracy.
+
+(if nothing is pasted below "WORK ITEM TO ESTIMATE", the AI should base the estimate on accessible resources and solely on the provided description and context without making assumptions about unstated details)
+
 </textarea
           >
           <div class="jira-prompt-copy-row">

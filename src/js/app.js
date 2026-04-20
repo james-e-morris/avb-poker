@@ -25,7 +25,7 @@ const state = {
     deps: 1,
     risk: 1,
   },
-  rovoConfidence: null,
+  aiConfidence: null,
   selectedExampleId: null,
   suggestedFinalDecision: null, // highlighted but not selected Final Pick
   questionVotePanicStartedAt: 0,
@@ -597,7 +597,7 @@ function parseJiraPromptResponse(text) {
   const levelToValue = { low: 1, medium: 2, high: 3 };
   const sizeValues = [1, 2, 3, 5, 8];
 
-  // Strip markdown bold/italic formatting to support Rovo's markdown output style
+  // Strip markdown bold/italic formatting to support AI's markdown output style
   const cleaned = text.replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/\*([^*\n]+)\*/g, '$1');
 
   const lines = cleaned.split(/\r?\n/);
@@ -617,7 +617,7 @@ function parseJiraPromptResponse(text) {
         const nextLine = lines[i + 1];
         const dashMatch = nextLine.match(/^\s*-\s+(.+)$/);
         if (dashMatch) return dashMatch[1].trim();
-        // Also accept a plain text line (e.g. markdown-stripped italic from Rovo)
+        // Also accept a plain text line (e.g. markdown-stripped italic from AI)
         const plainText = nextLine.trim();
         if (plainText && !knownLabelPattern.test(plainText) && !plainText.startsWith('---')) {
           return plainText;
@@ -731,7 +731,7 @@ function clearJiraPasteInput() {
     pasteInput.classList.remove('is-applied');
   }
 
-  state.rovoConfidence = null;
+  state.aiConfidence = null;
   updateCalcConfidenceMessage();
 }
 
@@ -1717,7 +1717,7 @@ function handleSessionData(session) {
 
 function resetCalculatorSelectionsToDefault() {
   state.suggestedFinalDecision = null;
-  state.rovoConfidence = null;
+  state.aiConfidence = null;
   applyCalcSelections({
     size: 1,
     complexity: 1,
@@ -1728,7 +1728,7 @@ function resetCalculatorSelectionsToDefault() {
   });
 }
 
-function normalizeRovoConfidenceAssessment(assessment) {
+function normalizeAiConfidenceAssessment(assessment) {
   const scoreNum = parseInt(assessment?.score, 10);
   if (!Number.isInteger(scoreNum) || scoreNum < 1 || scoreNum > 10) return null;
 
@@ -1915,7 +1915,7 @@ function updateCalcConfidenceMessage() {
   const feedback = document.getElementById('calc-confidence-feedback');
   if (!container || !summary || !feedback) return;
 
-  const assessment = state.rovoConfidence;
+  const assessment = state.aiConfidence;
   if (!assessment || assessment.score >= 8) {
     container.hidden = true;
     container.classList.remove('is-warning', 'is-error');
@@ -1928,20 +1928,20 @@ function updateCalcConfidenceMessage() {
   container.hidden = false;
   container.classList.toggle('is-warning', !isError);
   container.classList.toggle('is-error', isError);
-  summary.textContent = `Rovo confidence ${assessment.score}/10`;
+  summary.textContent = `AI confidence ${assessment.score}/10`;
   renderConfidenceFeedback(
     feedback,
-    assessment.feedback || 'Rovo indicated the ticket needs more detail before the estimate should be trusted.'
+    assessment.feedback || 'AI indicated the ticket needs more detail before the estimate should be trusted.'
   );
 }
 
-function clearRovoConfidenceIfPasteEmpty() {
+function clearAiConfidenceIfPasteEmpty() {
   const pasteInput = document.getElementById('jira-paste-input');
   if (!pasteInput) return;
   if (pasteInput.value.trim()) return;
 
   pasteInput.classList.remove('is-applied');
-  state.rovoConfidence = null;
+  state.aiConfidence = null;
   updateCalcConfidenceMessage();
 }
 
@@ -1958,10 +1958,10 @@ function applyCalcSelections(nextSelections, options = {}) {
     ...selectionUpdates,
   };
 
-  if (options.source === 'rovo') {
-    state.rovoConfidence = normalizeRovoConfidenceAssessment(options.rovoConfidence);
-  } else if (!options.preserveRovoConfidence) {
-    state.rovoConfidence = null;
+  if (options.source === 'ai') {
+    state.aiConfidence = normalizeAiConfidenceAssessment(options.aiConfidence);
+  } else if (!options.preserveAiConfidence) {
+    state.aiConfidence = null;
   }
 
   document.querySelectorAll('.scale-buttons').forEach((group) => {
@@ -3012,7 +3012,7 @@ function setupEventListeners() {
     .getElementById('btn-collapse-jira-prompt')
     .addEventListener('click', () => setJiraPromptSidebarExpanded(false));
 
-  // Copy Rovo prompt button
+  // Copy AI prompt button
   document.getElementById('jira-paste-input').addEventListener('paste', (e) => {
     // Allow the paste to land first, then parse
     setTimeout(() => {
@@ -3020,8 +3020,8 @@ function setupEventListeners() {
       const parsed = parseJiraPromptResponse(raw);
       if (parsed) {
         applyCalcSelections(parsed, {
-          source: 'rovo',
-          rovoConfidence: {
+          source: 'ai',
+          aiConfidence: {
             score: parsed.confidence,
             feedback: parsed.confidenceFeedback,
           },
@@ -3049,7 +3049,7 @@ function setupEventListeners() {
   });
 
   document.getElementById('jira-paste-input').addEventListener('input', () => {
-    clearRovoConfidenceIfPasteEmpty();
+    clearAiConfidenceIfPasteEmpty();
   });
 
   document.getElementById('btn-copy-jira-prompt').addEventListener('click', async () => {

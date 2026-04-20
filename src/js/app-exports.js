@@ -281,7 +281,7 @@ function parseJiraPromptResponse(text) {
   const levelToValue = { low: 1, medium: 2, high: 3 };
   const sizeValues = [1, 2, 3, 5, 8];
 
-  // Strip markdown bold/italic formatting to support Rovo's markdown output style
+  // Strip markdown bold/italic formatting to support AI's markdown output style
   const cleaned = text.replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/\*([^*\n]+)\*/g, '$1');
 
   const lines = cleaned.split(/\r?\n/);
@@ -301,7 +301,7 @@ function parseJiraPromptResponse(text) {
         const nextLine = lines[i + 1];
         const dashMatch = nextLine.match(/^\s*-\s+(.+)$/);
         if (dashMatch) return dashMatch[1].trim();
-        // Also accept a plain text line (e.g. markdown-stripped italic from Rovo)
+        // Also accept a plain text line (e.g. markdown-stripped italic from AI)
         const plainText = nextLine.trim();
         if (plainText && !knownLabelPattern.test(plainText) && !plainText.startsWith('---')) {
           return plainText;

@@ -32,7 +32,7 @@ Testing expectations and integration boundaries are not fully specified.
 `.trim();
 
   describe('valid inputs', () => {
-    test('parses a well-formed Rovo response', () => {
+    test('parses a well-formed AI response', () => {
       const result = parseJiraPromptResponse(validResponse);
       expect(result).toEqual({
         size: 5,
@@ -171,7 +171,7 @@ Testing expectations and integration boundaries are not fully specified.
       expect(result.size).toBe(5);
     });
 
-    test('parses markdown-bold labels and italic reasons (Rovo output format)', () => {
+    test('parses markdown-bold labels and italic reasons (AI output format)', () => {
       const text = [
         '**Size: 5**  ',
         '*Touches multiple services and repositories.*',

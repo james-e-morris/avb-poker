@@ -31,6 +31,9 @@ const state = {
   questionVotePanicStartedAt: 0,
   coffeeVotePourStartedAt: 0,
   storyTimerTicker: null,
+  storyTimerWasRunning: false,
+  storyTimerPowerupTimeout: null,
+  storyTimerRippleTimeout: null,
 };
 
 const CALC_METRIC_KEYS = ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'];
@@ -40,6 +43,8 @@ const SIDEBAR_LAYOUT_RIGHT_WIDTH = 360;
 const TIMER_DURATION_OPTIONS = [30, 60, 90];
 const TIMER_DEFAULT_SECONDS = 30;
 const TIMER_WARNING_SECONDS = 10;
+const TIMER_POWERUP_MS = 500;
+const TIMER_RIPPLE_MS = 1400;
 
 const ADMIN_UID = 'u_4005191935_1395682239';
 const ADMIN_HISTORY_KEY = 'pp_admin_history_v1';
@@ -2578,6 +2583,135 @@ function el(tag, cls, text) {
   return e;
 }
 
+function applyTimerWavePopEffects(originX, originY, maxDistance) {
+  const candidates = document.querySelectorAll(
+    '#view-game.active .game-header, #view-game.active .participants-section, #view-game.active .status-bar, #view-game.active .calculator, #view-game.active .fibonacci-section, #view-game.active .results-area, #view-game.active .game-footer, #view-game.active .participant-card, #view-game.active .vote-card'
+  );
+
+  candidates.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (node.hidden || node.offsetParent === null) return;
+
+    const rect = node.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distance = Math.hypot(centerX - originX, centerY - originY);
+    const delayMs = Math.max(
+      0,
+      Math.min(TIMER_RIPPLE_MS * 0.92, (distance / Math.max(maxDistance, 1)) * TIMER_RIPPLE_MS)
+    );
+
+    node.classList.remove('timer-wave-pop');
+    node.style.setProperty('--timer-wave-delay', `${Math.round(delayMs)}ms`);
+    void node.offsetWidth;
+    node.classList.add('timer-wave-pop');
+  });
+}
+
+function clearTimerWavePopEffects() {
+  document.querySelectorAll('.timer-wave-pop').forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    node.classList.remove('timer-wave-pop');
+    node.style.removeProperty('--timer-wave-delay');
+  });
+}
+
+function triggerStoryTimerStartBurst(timerRoot) {
+  if (!timerRoot) return;
+
+  const timerValueEl = document.getElementById('story-timer-value');
+  if (!timerValueEl) return;
+
+  const timerRect = timerValueEl.getBoundingClientRect();
+  const timerStyles = window.getComputedStyle(timerValueEl);
+  const originX = timerRect.left + timerRect.width / 2;
+  const originY = timerRect.top + timerRect.height / 2;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const maxDistance = Math.max(
+    Math.hypot(originX, originY),
+    Math.hypot(viewportWidth - originX, originY),
+    Math.hypot(originX, viewportHeight - originY),
+    Math.hypot(viewportWidth - originX, viewportHeight - originY)
+  );
+
+  if (state.storyTimerPowerupTimeout) {
+    window.clearTimeout(state.storyTimerPowerupTimeout);
+    state.storyTimerPowerupTimeout = null;
+  }
+  if (state.storyTimerRippleTimeout) {
+    window.clearTimeout(state.storyTimerRippleTimeout);
+    state.storyTimerRippleTimeout = null;
+  }
+  clearTimerWavePopEffects();
+
+  const startBorderWidth = parseFloat(timerStyles.borderTopWidth) || 2;
+  const startRadius = parseFloat(timerStyles.borderTopLeftRadius) || 10;
+
+  document.body.style.setProperty('--timer-ripple-x', `${originX}px`);
+  document.body.style.setProperty('--timer-ripple-y', `${originY}px`);
+  document.body.style.setProperty('--timer-ripple-start-w', `${Math.max(1, Math.round(timerRect.width))}px`);
+  document.body.style.setProperty('--timer-ripple-start-h', `${Math.max(1, Math.round(timerRect.height))}px`);
+  document.body.style.setProperty('--timer-ripple-start-r', `${Math.max(2, Math.round(startRadius))}px`);
+  document.body.style.setProperty('--timer-ripple-start-bw', `${Math.max(1, startBorderWidth)}px`);
+  document.body.style.setProperty('--timer-ripple-size', `${Math.ceil(maxDistance * 2)}px`);
+
+  timerRoot.classList.remove('is-start-burst');
+  document.body.classList.remove('timer-ripple-active');
+  void timerRoot.offsetWidth;
+  timerRoot.classList.add('is-start-burst');
+
+  state.storyTimerPowerupTimeout = window.setTimeout(() => {
+    timerRoot.classList.remove('is-start-burst');
+
+    document.body.classList.remove('timer-ripple-active');
+    void document.body.offsetWidth;
+    document.body.classList.add('timer-ripple-active');
+    applyTimerWavePopEffects(originX, originY, maxDistance);
+
+    state.storyTimerRippleTimeout = window.setTimeout(() => {
+      document.body.classList.remove('timer-ripple-active');
+      clearTimerWavePopEffects();
+      document.body.style.removeProperty('--timer-ripple-x');
+      document.body.style.removeProperty('--timer-ripple-y');
+      document.body.style.removeProperty('--timer-ripple-start-w');
+      document.body.style.removeProperty('--timer-ripple-start-h');
+      document.body.style.removeProperty('--timer-ripple-start-r');
+      document.body.style.removeProperty('--timer-ripple-start-bw');
+      document.body.style.removeProperty('--timer-ripple-size');
+      state.storyTimerRippleTimeout = null;
+    }, TIMER_RIPPLE_MS);
+
+    state.storyTimerPowerupTimeout = null;
+  }, TIMER_POWERUP_MS);
+}
+
+function clearTimerBurstEffects() {
+  if (state.storyTimerPowerupTimeout) {
+    window.clearTimeout(state.storyTimerPowerupTimeout);
+    state.storyTimerPowerupTimeout = null;
+  }
+  if (state.storyTimerRippleTimeout) {
+    window.clearTimeout(state.storyTimerRippleTimeout);
+    state.storyTimerRippleTimeout = null;
+  }
+
+  const timerRoot = document.querySelector('.story-timer');
+  if (timerRoot) {
+    timerRoot.classList.remove('is-start-burst');
+  }
+
+  document.body.classList.remove('timer-ripple-active');
+  clearTimerWavePopEffects();
+  document.body.style.removeProperty('--timer-ripple-x');
+  document.body.style.removeProperty('--timer-ripple-y');
+  document.body.style.removeProperty('--timer-ripple-start-w');
+  document.body.style.removeProperty('--timer-ripple-start-h');
+  document.body.style.removeProperty('--timer-ripple-start-r');
+  document.body.style.removeProperty('--timer-ripple-start-bw');
+  document.body.style.removeProperty('--timer-ripple-size');
+}
+
 function renderStoryTimer(session) {
   const timerRoot = document.querySelector('.story-timer');
   const timerValueEl = document.getElementById('story-timer-value');
@@ -2592,6 +2726,11 @@ function renderStoryTimer(session) {
   timerRoot.classList.toggle('is-running', runtime.isRunning);
   timerRoot.classList.toggle('is-warning', runtime.isWarning);
   timerRoot.classList.toggle('is-expired', runtime.isExpired);
+
+  if (runtime.isRunning && !state.storyTimerWasRunning) {
+    triggerStoryTimerStartBurst(timerRoot);
+  }
+  state.storyTimerWasRunning = runtime.isRunning;
 
   const optionButtons = document.querySelectorAll('.story-timer-option');
   optionButtons.forEach((btn) => {
@@ -3099,6 +3238,8 @@ function leaveGame() {
   state.sessionData = null;
   state.currentVote = null;
   state.wasRevealed = false;
+  state.storyTimerWasRunning = false;
+  clearTimerBurstEffects();
   renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);
   showView('home');

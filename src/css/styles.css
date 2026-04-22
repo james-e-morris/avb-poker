@@ -544,12 +544,48 @@ select {
 .story-timer.is-warning .story-timer-value {
   color: var(--warning);
   border-color: var(--warning);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning) 28%, transparent);
 }
 
 .story-timer.is-expired .story-timer-value {
   color: var(--error);
   border-color: var(--error);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--error) 30%, transparent);
   animation: timer-alarm-wiggle 0.65s ease-in-out infinite;
+}
+
+.story-timer.is-start-burst .story-timer-value {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--primary) 28%, transparent),
+    0 0 22px color-mix(in srgb, var(--primary) 78%, transparent),
+    0 0 58px color-mix(in srgb, var(--primary) 56%, transparent);
+  animation: timer-start-glow 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+body.timer-ripple-active::before {
+  content: '';
+  position: fixed;
+  left: var(--timer-ripple-x, 50vw);
+  top: var(--timer-ripple-y, 20vh);
+  width: var(--timer-ripple-start-w, 70px);
+  height: var(--timer-ripple-start-h, 38px);
+  pointer-events: none;
+  z-index: var(--z-toast);
+  border: var(--timer-ripple-start-bw, 2px) solid color-mix(in srgb, var(--primary) 76%, transparent);
+  border-radius: var(--timer-ripple-start-r, 10px);
+  box-shadow:
+    0 0 0 0 color-mix(in srgb, var(--primary) 48%, transparent),
+    0 0 12px color-mix(in srgb, var(--primary) 40%, transparent);
+  opacity: 0.24;
+  transform: translate(-50%, -50%);
+  animation: timer-single-ripple 1.4s ease-out forwards;
+}
+
+body.timer-ripple-active .timer-wave-pop {
+  animation: timer-wave-pop 280ms cubic-bezier(0.2, 0.8, 0.22, 1) var(--timer-wave-delay, 0ms) both;
+  transform-origin: center;
+  will-change: transform, filter;
 }
 
 .story-timer-options {
@@ -620,6 +656,66 @@ select {
   }
   100% {
     transform: rotate(0deg);
+  }
+}
+
+@keyframes timer-start-glow {
+  0% {
+    transform: scale(1);
+    filter: saturate(1.1);
+  }
+  50% {
+    transform: scale(1.08);
+    filter: saturate(1.45);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes timer-single-ripple {
+  0% {
+    width: var(--timer-ripple-start-w, 70px);
+    height: var(--timer-ripple-start-h, 38px);
+    border-radius: var(--timer-ripple-start-r, 10px);
+    border-width: var(--timer-ripple-start-bw, 2px);
+    opacity: 0.24;
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--primary) 42%, transparent),
+      0 0 10px color-mix(in srgb, var(--primary) 36%, transparent);
+  }
+  72% {
+    opacity: 0.52;
+    border-width: 16px;
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--primary) 58%, transparent),
+      0 0 42px color-mix(in srgb, var(--primary) 66%, transparent);
+  }
+  100% {
+    width: var(--timer-ripple-size, 200vmax);
+    height: var(--timer-ripple-size, 200vmax);
+    border-radius: 999px;
+    border-width: 24px;
+    opacity: 0.2;
+    box-shadow:
+      0 0 0 8px color-mix(in srgb, var(--primary) 66%, transparent),
+      0 0 84px color-mix(in srgb, var(--primary) 78%, transparent);
+  }
+}
+
+@keyframes timer-wave-pop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0) scale(1.022);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: brightness(1);
   }
 }
 

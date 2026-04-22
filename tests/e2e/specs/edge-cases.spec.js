@@ -176,7 +176,7 @@ test.describe('Planning Poker - Edge Cases', () => {
 
     // Don't vote, just check UI handles it
     const voteCount = page.locator('#vote-count-label');
-    await expect(voteCount).toContainText('0 / 1 voted');
+    await expect(voteCount).toContainText('0 of 1 voted');
   });
 });
 
@@ -190,21 +190,16 @@ test.describe('Planning Poker - Modal Interactions', () => {
 
     await expect(page.locator('#view-game')).toHaveClass(/active/, { timeout: 3000 });
 
-    // Should have edit story button (moderator only)
-    const editBtn = page.locator('#btn-edit-story');
+    await page.click('#game-story-display', { force: true });
 
-    if (await editBtn.isVisible()) {
-      await editBtn.click();
+    // Modal should be visible
+    const modal = page.locator('#modal-story');
+    await expect(modal).not.toHaveAttribute('hidden');
 
-      // Modal should be visible
-      const modal = page.locator('#modal-story');
-      await expect(modal).not.toHaveAttribute('hidden');
-
-      // Close button should work
-      const cancelBtn = page.locator('#btn-story-cancel');
-      await cancelBtn.click();
-      await expect(modal).toHaveAttribute('hidden');
-    }
+    // Close button should work
+    const cancelBtn = page.locator('#btn-story-cancel');
+    await cancelBtn.click();
+    await expect(modal).toHaveAttribute('hidden');
   });
 
   test('should submit story edit', async ({ page }) => {
@@ -216,21 +211,17 @@ test.describe('Planning Poker - Modal Interactions', () => {
 
     await expect(page.locator('#view-game')).toHaveClass(/active/, { timeout: 3000 });
 
-    const editBtn = page.locator('#btn-edit-story');
+    await page.click('#game-story-display', { force: true });
 
-    if (await editBtn.isVisible()) {
-      await editBtn.click();
+    const input = page.locator('#story-input');
+    await input.fill('Build new feature');
 
-      const input = page.locator('#story-input');
-      await input.fill('Build new feature');
+    const saveBtn = page.locator('#btn-story-save');
+    await saveBtn.click();
 
-      const saveBtn = page.locator('#btn-story-save');
-      await saveBtn.click();
-
-      // Modal should close
-      const modal = page.locator('#modal-story');
-      await expect(modal).toHaveAttribute('hidden');
-    }
+    // Modal should close
+    const modal = page.locator('#modal-story');
+    await expect(modal).toHaveAttribute('hidden');
   });
 
   test('should close modal on backdrop click', async ({ page }) => {
@@ -242,25 +233,21 @@ test.describe('Planning Poker - Modal Interactions', () => {
 
     await expect(page.locator('#view-game')).toHaveClass(/active/, { timeout: 3000 });
 
-    const editBtn = page.locator('#btn-edit-story');
+    await page.click('#game-story-display', { force: true });
 
-    if (await editBtn.isVisible()) {
-      await editBtn.click();
+    const modal = page.locator('#modal-story');
+    await expect(modal).not.toHaveAttribute('hidden');
 
-      const modal = page.locator('#modal-story');
-      await expect(modal).not.toHaveAttribute('hidden');
+    // Click backdrop
+    const backdrop = modal;
+    await backdrop.click({ position: { x: 5, y: 5 }, force: true });
 
-      // Click backdrop
-      const backdrop = modal;
-      await backdrop.click({ position: { x: 0, y: 0 } });
-
-      // Modal should close
-      await expect(modal)
-        .toHaveAttribute('hidden', { timeout: 1000 })
-        .catch(() => {
-          // Modal might have other close triggers
-        });
-    }
+    // Modal should close
+    await expect(modal)
+      .toHaveAttribute('hidden', { timeout: 1000 })
+      .catch(() => {
+        // Modal might have other close triggers
+      });
   });
 
   test('should handle modal with keyboard shortcuts', async ({ page }) => {
@@ -272,21 +259,17 @@ test.describe('Planning Poker - Modal Interactions', () => {
 
     await expect(page.locator('#view-game')).toHaveClass(/active/, { timeout: 3000 });
 
-    const editBtn = page.locator('#btn-edit-story');
+    await page.click('#game-story-display', { force: true });
 
-    if (await editBtn.isVisible()) {
-      await editBtn.click();
+    // Escape should close
+    await page.keyboard.press('Escape');
 
-      // Escape should close
-      await page.keyboard.press('Escape');
-
-      const modal = page.locator('#modal-story');
-      await expect(modal)
-        .toHaveAttribute('hidden', { timeout: 1000 })
-        .catch(() => {
-          // Modal might stay open, that's ok
-        });
-    }
+    const modal = page.locator('#modal-story');
+    await expect(modal)
+      .toHaveAttribute('hidden', { timeout: 1000 })
+      .catch(() => {
+        // Modal might stay open, that's ok
+      });
   });
 });
 

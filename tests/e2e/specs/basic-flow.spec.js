@@ -133,17 +133,17 @@ test.describe('Planning Poker - Basic Flow', () => {
     expect(['dark', 'light']).toContain(newTheme);
   });
 
-  test('should show formula preview', async ({ page }) => {
+  test('should show calculator details toggle', async ({ page }) => {
     await page.goto('/');
+    await page.fill('#session-name-input', 'Details Test');
+    await page.fill('#create-name-input', 'User');
+    await page.click('#btn-create');
 
-    const details = page.locator('.formula-preview');
-    await expect(details).toBeVisible();
+    await expect(page.locator('#view-game')).toHaveClass(/active/, { timeout: 5000 });
+    await expect(page.locator('#btn-toggle-calc-details')).toBeVisible();
 
-    // Click to open
-    await page.click('.formula-preview summary');
-
-    // Should show formula grid
-    await expect(page.locator('.formula-grid')).toBeVisible();
+    await page.click('#btn-toggle-calc-details');
+    await expect(page.locator('#calc-details')).toBeVisible();
   });
 });
 
@@ -185,7 +185,7 @@ test.describe('Planning Poker - Voting Flow', () => {
 
     // Status bar should update
     const voteCount = page.locator('#vote-count-label');
-    await expect(voteCount).toContainText('1 / 1 voted');
+    await expect(voteCount).toContainText('1 of 1 voted');
   });
 
   test('should reveal votes', async ({ page, context }) => {
@@ -211,6 +211,12 @@ test.describe('Planning Poker - Voting Flow', () => {
     // Reveal button should appear for moderator
     const revealBtn = page.locator('#btn-reveal');
     await expect(revealBtn).not.toHaveAttribute('hidden');
+
+    // Reveal is disabled until a story name is set
+    await page.click('#game-story-display', { force: true });
+    await expect(page.locator('#modal-story')).not.toHaveAttribute('hidden');
+    await page.fill('#story-input', 'Story for reveal test');
+    await page.click('#btn-story-save');
 
     // Click reveal
     await page.click('#btn-reveal');
@@ -272,6 +278,7 @@ test.describe('Planning Poker - Calculator', () => {
 
     // Output elements should exist
     await expect(page.locator('#out-sp')).toBeVisible();
+    await page.click('#btn-toggle-calc-details');
     await expect(page.locator('#out-formula')).toBeVisible();
     await expect(page.locator('#btn-vote-calc')).toBeVisible();
   });

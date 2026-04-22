@@ -1,116 +1,29 @@
-// app-exports.js - Exportable functions from app.js for testing
-// This file re-exports main functions to make them testable
+// app-exports.js - Exportable functions for testing
+// Re-exports from modular utility files to eliminate duplication
 
 'use strict';
 
-const TEST_FIBONACCI_CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];
+// Import utilities - in Node.js/Jest, these come from utility modules
+// In the browser, they're loaded as global scripts and functions exist globally
+const {
+  FIBONACCI_CARDS,
+  mapToFibonacci,
+  scoreToMultiplier,
+  nearestFib,
+  calculateSP,
+} = require('./utils-calculations.js');
 
-// Raw score -> Suggested SP mapping (range-based)
-function mapToFibonacci(rawScore) {
-  if (rawScore < 1.4) return 1;
-  if (rawScore < 2.5) return 2;
-  if (rawScore < 3.9) return 3;
-  if (rawScore < 6.5) return 5;
-  if (rawScore < 10) return 8;
-  if (rawScore < 17) return 13;
-  if (rawScore < 27) return 21;
-  if (rawScore < 44) return 34;
-  if (rawScore < 72) return 55;
-  return 89;
-}
+const {
+  formatCalcNumber,
+  safeText,
+  voteColorClass,
+  formatAdminStatus,
+  deepClone,
+  getAblyErrorCode,
+  getAblyChannelName,
+} = require('./utils-string.js');
 
-function scoreToMultiplier(score) {
-  const multiplierMap = {
-    1: 1,
-    2: 1.1,
-    3: 1.2,
-  };
-  return multiplierMap[score] || 1;
-}
-
-function formatCalcNumber(value) {
-  if (Number.isInteger(value)) return String(value);
-  return value.toFixed(2).replace(/\.?0+$/, '');
-}
-
-function voteColorClass(vote) {
-  const v = parseFloat(vote);
-  if (isNaN(v)) return '';
-  if (v <= 3) return 'vote-low';
-  if (v <= 8) return 'vote-ok';
-  if (v <= 21) return 'vote-med';
-  return 'vote-high';
-}
-
-function nearestFib(avg) {
-  if (avg < 1.4) return 1;
-  if (avg < 2.5) return 2;
-  if (avg < 3.9) return 3;
-  if (avg < 6.5) return 5;
-  if (avg < 10) return 8;
-  if (avg < 17) return 13;
-  if (avg < 27) return 21;
-  if (avg < 44) return 34;
-  if (avg < 72) return 55;
-  return 89;
-}
-
-// Utility functions
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-function getAblyErrorCode(err) {
-  return Number(err?.code || err?.response?.error?.code || err?.statusCode || 0);
-}
-
-function getAblyChannelName(sessionId) {
-  const prefix = 'avb-poker';
-  return `${prefix}:session:${sessionId}`;
-}
-
-function safeText(val) {
-  if (!val) return '';
-  return String(val).trim().slice(0, 80);
-}
-
-function formatAdminStatus(record) {
-  const hasFinal =
-    record?.finalDecision !== null && record?.finalDecision !== undefined && record?.finalDecision !== '';
-  return hasFinal ? `${record.finalDecision} SP` : 'voting';
-}
-
-function getRevealDisabledReason(session, isModerator, votedCount) {
-  if (!isModerator || votedCount <= 0) return '';
-  if (!safeText(session && session.story)) return 'Story name must be provided';
-  return '';
-}
-
-function getNextStoryDisabledReason(session, isModerator) {
-  if (!isModerator || !session || session.status !== 'revealed') return '';
-  const hasFinal = session.finalDecision !== null && session.finalDecision !== undefined;
-  if (!hasFinal) return 'Final pick must be selected';
-  return '';
-}
-
-function normalizeRankingLevel(value) {
-  if (value === null || value === undefined || value === '') return null;
-
-  const numeric = Number(value);
-  if (!isNaN(numeric)) {
-    if (numeric === 1) return 'L';
-    if (numeric === 2) return 'M';
-    if (numeric === 3) return 'H';
-    return String(value);
-  }
-
-  const lowered = String(value).trim().toLowerCase();
-  if (!lowered) return null;
-  if (lowered === 'low' || lowered === 'l') return 'L';
-  if (lowered === 'medium' || lowered === 'med' || lowered === 'm') return 'M';
-  if (lowered === 'high' || lowered === 'h') return 'H';
-  return String(value).trim();
-}
+const { getRevealDisabledReason, getNextStoryDisabledReason } = require('./utils-validation.js');
 
 function getParticipantRankingSummary(participant) {
   const rankingSources = [
@@ -235,30 +148,23 @@ function buildAuditClipboardText(session, sessionId) {
   ].join('\n');
 }
 
-function calculateSP(size, c, u, cl, d, r) {
-  const complexityMultiplier = scoreToMultiplier(c);
-  const uncertaintyMultiplier = scoreToMultiplier(u);
-  const cognitiveMultiplier = scoreToMultiplier(cl);
-  const dependencyMultiplier = scoreToMultiplier(d);
-  const riskMultiplier = scoreToMultiplier(r);
+function normalizeRankingLevel(value) {
+  if (value === null || value === undefined || value === '') return null;
 
-  const total =
-    size * complexityMultiplier * uncertaintyMultiplier * cognitiveMultiplier * dependencyMultiplier * riskMultiplier;
+  const numeric = Number(value);
+  if (!isNaN(numeric)) {
+    if (numeric === 1) return 'L';
+    if (numeric === 2) return 'M';
+    if (numeric === 3) return 'H';
+    return String(value);
+  }
 
-  const roundedScore = Math.round(total);
-  const sp = mapToFibonacci(total);
-  return {
-    rawScore: total,
-    roundedScore,
-    sp,
-    multipliers: {
-      complexity: complexityMultiplier,
-      uncertainty: uncertaintyMultiplier,
-      cognitive: cognitiveMultiplier,
-      deps: dependencyMultiplier,
-      risk: riskMultiplier,
-    },
-  };
+  const lowered = String(value).trim().toLowerCase();
+  if (!lowered) return null;
+  if (lowered === 'low' || lowered === 'l') return 'L';
+  if (lowered === 'medium' || lowered === 'med' || lowered === 'm') return 'M';
+  if (lowered === 'high' || lowered === 'h') return 'H';
+  return String(value).trim();
 }
 
 function generateSessionId() {
@@ -412,7 +318,7 @@ function toggleJiraPromptSidebar() {
 
 // Exports for testing (Node/Jest only)
 module.exports = {
-  FIBONACCI_CARDS: TEST_FIBONACCI_CARDS,
+  FIBONACCI_CARDS,
   mapToFibonacci,
   scoreToMultiplier,
   formatCalcNumber,
@@ -432,4 +338,8 @@ module.exports = {
   parseJiraPromptResponse,
   setJiraPromptSidebarExpanded,
   toggleJiraPromptSidebar,
+  getParticipantRankingSummary,
+  summarizeVotesForAudit,
+  getCurrentRevealTimestamp,
+  formatAuditTimestampEst,
 };

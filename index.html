@@ -28,8 +28,15 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="src/css/styles.css" />
+    <meta name="theme-color" content="#7c3aed" />
   </head>
   <body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Status region for screen readers -->
+    <div id="status-region" aria-live="polite" aria-atomic="true" role="status" class="sr-only"></div>
+    <!-- Toast notifications live region -->
+    <div id="toast-region" aria-live="assertive" aria-atomic="true" role="alert" class="sr-only"></div>
     <!-- ======================================================
        HOME VIEW
        ====================================================== -->
@@ -464,7 +471,7 @@ Optional: include brief context about your project's tech stack, architecture, o
       </div>
 
       <!-- Voting Area -->
-      <main id="voting-area" class="game-main">
+      <main id="main-content" class="game-main">
         <div class="calculator calc-details-hidden">
           <div class="calc-inputs">
             <div class="calc-row">

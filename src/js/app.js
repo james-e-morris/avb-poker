@@ -2788,7 +2788,7 @@ function renderStoryTimer(session) {
   timerRoot.classList.toggle('is-expired', runtime.isExpired);
 
   // Update warning glow intensity based on remaining seconds (0-10 sec)
-  const warningGlow = runtime.isWarning 
+  const warningGlow = runtime.isWarning
     ? Math.max(0, Math.min(1, (TIMER_WARNING_SECONDS - runtime.remainingSec) / TIMER_WARNING_SECONDS))
     : 0;
   document.body.style.setProperty('--timer-warning-glow', warningGlow.toString());
@@ -3066,7 +3066,8 @@ function showResults(session) {
   const area = document.getElementById('results-area');
   area.removeAttribute('hidden');
 
-  document.getElementById('voting-area').classList.add('voting-disabled');
+  const votingArea = document.getElementById('main-content') || document.getElementById('voting-area');
+  if (votingArea) votingArea.classList.add('voting-disabled');
 
   const summary = summarizeVotes(participants);
   const entries = summary.entries;
@@ -3219,7 +3220,8 @@ function renderSessionHistory(historyItems) {
 
 function hideResults() {
   document.getElementById('results-area').setAttribute('hidden', '');
-  document.getElementById('voting-area').classList.remove('voting-disabled');
+  const votingArea = document.getElementById('main-content') || document.getElementById('voting-area');
+  if (votingArea) votingArea.classList.remove('voting-disabled');
   document.getElementById('footer-voting').hidden = false;
   document.getElementById('footer-revealed').hidden = true;
 

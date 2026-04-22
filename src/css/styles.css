@@ -49,6 +49,57 @@
   --right-sidebar-width: 360px;
 }
 
+/* ---- Accessibility --------------------------------------- */
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary);
+  color: var(--primary-fg);
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 9999;
+  border-radius: 0 0 var(--r) 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Enhanced focus indicators */
+*:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
 [data-theme='dark'] {
   --bg: #0f172a;
   --surface: #1e293b;
@@ -156,16 +207,46 @@ select {
   padding: 6px 12px;
   font-size: 0.8rem;
 }
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none !important;
-}
+
+/* Disabled button states - more accessible */
+.btn:disabled,
 .btn.is-disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
+  box-shadow: none !important;
+  color: var(--text-muted);
 }
+
+.btn:disabled:hover,
+.btn.is-disabled:hover {
+  background-color: inherit;
+  border-color: inherit;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Ensure disabled buttons have sufficient color contrast */
+.btn-primary:disabled,
+.btn-primary.is-disabled {
+  background: color-mix(in srgb, var(--primary) 50%, var(--surface-2));
+  color: var(--text-muted);
+}
+
+.btn-secondary:disabled,
+.btn-secondary.is-disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.btn-ghost:disabled,
+.btn-ghost.is-disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: transparent;
+}
+
 .btn-primary.is-disabled:hover,
 .btn-secondary.is-disabled:hover,
 .btn-ghost.is-disabled:hover {
@@ -1588,6 +1669,31 @@ body.timer-reverse-ripple-active::before {
   .vote-card.selected[data-value='89']::after {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* Touch-friendly targets for mobile devices */
+@media (pointer: coarse) {
+  .btn,
+  a,
+  button,
+  input[type='checkbox'],
+  input[type='radio'],
+  [role='button'] {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Improve color contrast for high contrast mode */
+@media (prefers-contrast: more) {
+  .btn:disabled,
+  .btn.is-disabled {
+    opacity: 0.6;
+  }
+
+  *:focus-visible {
+    outline-width: 4px;
   }
 }
 

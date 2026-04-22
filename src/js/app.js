@@ -30,12 +30,16 @@ const state = {
   suggestedFinalDecision: null, // highlighted but not selected Final Pick
   questionVotePanicStartedAt: 0,
   coffeeVotePourStartedAt: 0,
+  storyTimerTicker: null,
 };
 
 const CALC_METRIC_KEYS = ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'];
 const SIDEBAR_LAYOUT_MIN_CONTENT_WIDTH = 940;
 const SIDEBAR_LAYOUT_HISTORY_WIDTH = 320;
 const SIDEBAR_LAYOUT_RIGHT_WIDTH = 360;
+const TIMER_DURATION_OPTIONS = [30, 60, 90];
+const TIMER_DEFAULT_SECONDS = 30;
+const TIMER_WARNING_SECONDS = 10;
 
 const ADMIN_UID = 'u_4005191935_1395682239';
 const ADMIN_HISTORY_KEY = 'pp_admin_history_v1';
@@ -790,6 +794,149 @@ function canStartNextStory(session) {
   return hasFinalDecision(session);
 }
 
+function clampTimerValue(value, fallback = TIMER_DEFAULT_SECONDS) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(0, Math.round(numeric));
+}
+
+function normalizeTimerDuration(value) {
+  const numeric = Number(value);
+  return TIMER_DURATION_OPTIONS.includes(numeric) ? numeric : TIMER_DEFAULT_SECONDS;
+}
+
+function ensureSessionTimer(session) {
+  if (!session || typeof session !== 'object') {
+    return {
+      durationSec: TIMER_DEFAULT_SECONDS,
+      remainingSec: TIMER_DEFAULT_SECONDS,
+      isRunning: false,
+      endsAt: null,
+    };
+  }
+
+  const existing = session.timer || {};
+  const durationSec = normalizeTimerDuration(existing.durationSec);
+  const remainingSec = clampTimerValue(existing.remainingSec, durationSec);
+  const isRunning = !!existing.isRunning;
+  const endsAt = isRunning ? Number(existing.endsAt) || Date.now() + remainingSec * 1000 : null;
+
+  session.timer = {
+    durationSec,
+    remainingSec,
+    isRunning,
+    endsAt,
+  };
+
+  return session.timer;
+}
+
+function getTimerRemainingSeconds(timer, nowMs = Date.now()) {
+  if (!timer) return TIMER_DEFAULT_SECONDS;
+
+  if (timer.isRunning && timer.endsAt) {
+    const remainingMs = Number(timer.endsAt) - nowMs;
+    if (remainingMs <= 0) return 0;
+    return clampTimerValue(Math.ceil(remainingMs / 1000), timer.durationSec);
+  }
+
+  return clampTimerValue(timer.remainingSec, timer.durationSec);
+}
+
+function getStoryTimerRuntime(session) {
+  const timer = ensureSessionTimer(session);
+  const remainingSec = getTimerRemainingSeconds(timer);
+  const isRunning = !!timer.isRunning && remainingSec > 0;
+  return {
+    timer,
+    remainingSec,
+    isRunning,
+    isWarning: isRunning && remainingSec <= TIMER_WARNING_SECONDS,
+    isExpired: remainingSec === 0,
+  };
+}
+
+function formatStoryTimerClock(totalSeconds) {
+  const safeSeconds = clampTimerValue(totalSeconds, TIMER_DEFAULT_SECONDS);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+async function publishSessionWithTimerMutation(mutateTimer) {
+  const { sessionId } = state;
+  if (!sessionId || !state.isModerator) return;
+
+  if (state.dbMode === 'ably') {
+    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
+    if (!session) return;
+    const timer = ensureSessionTimer(session);
+    mutateTimer(timer, session);
+    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
+    await ablyPublishState(channel, session);
+    ablyPublishAdminAudit(session);
+    return;
+  }
+
+  const session = getDemoSession(sessionId);
+  if (!session) return;
+  const timer = ensureSessionTimer(session);
+  mutateTimer(timer, session);
+  saveDemoSession(sessionId, session);
+  captureAdminSessionAudit(session);
+}
+
+async function setTimerDuration(seconds) {
+  if (!state.isModerator) return;
+  const durationSec = normalizeTimerDuration(seconds);
+
+  await publishSessionWithTimerMutation((timer) => {
+    timer.durationSec = durationSec;
+    timer.remainingSec = durationSec;
+    timer.isRunning = false;
+    timer.endsAt = null;
+  });
+}
+
+async function startStoryTimer() {
+  if (!state.isModerator) return;
+
+  await publishSessionWithTimerMutation((timer) => {
+    const fallback = normalizeTimerDuration(timer.durationSec);
+    const remainingSec = clampTimerValue(timer.remainingSec, fallback) || fallback;
+    timer.durationSec = fallback;
+    timer.remainingSec = remainingSec;
+    timer.isRunning = true;
+    timer.endsAt = Date.now() + remainingSec * 1000;
+  });
+}
+
+async function resetStoryTimer() {
+  if (!state.isModerator) return;
+
+  await publishSessionWithTimerMutation((timer) => {
+    const durationSec = normalizeTimerDuration(timer.durationSec);
+    timer.durationSec = durationSec;
+    timer.remainingSec = durationSec;
+    timer.isRunning = false;
+    timer.endsAt = null;
+  });
+}
+
+function startStoryTimerTicker() {
+  if (state.storyTimerTicker) return;
+  state.storyTimerTicker = setInterval(() => {
+    if (!state.sessionData) return;
+    renderStoryTimer(state.sessionData);
+  }, 250);
+}
+
+function stopStoryTimerTicker() {
+  if (!state.storyTimerTicker) return;
+  clearInterval(state.storyTimerTicker);
+  state.storyTimerTicker = null;
+}
+
 function buildRevealHistoryEntry(session) {
   const summary = summarizeVotes(session.participants || {});
   const id = `r_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -1350,6 +1497,12 @@ async function createSession(sessionName, userName) {
     expiresAt: Date.now() + roomTtlMs(),
     finalDecision: null,
     currentRevealId: null,
+    timer: {
+      durationSec: TIMER_DEFAULT_SECONDS,
+      remainingSec: TIMER_DEFAULT_SECONDS,
+      isRunning: false,
+      endsAt: null,
+    },
     resultsHistory: [],
     participants: {
       [userId]: {
@@ -1549,6 +1702,10 @@ async function nextStory(storyName) {
       session.story = cleanStoryName;
       session.finalDecision = null;
       session.currentRevealId = null;
+      const timer = ensureSessionTimer(session);
+      timer.remainingSec = timer.durationSec;
+      timer.isRunning = true;
+      timer.endsAt = Date.now() + timer.durationSec * 1000;
       Object.keys(session.participants || {}).forEach((uid) => {
         session.participants[uid].vote = null;
         session.participants[uid].hasVoted = false;
@@ -1569,6 +1726,10 @@ async function nextStory(storyName) {
       session.story = cleanStoryName;
       session.finalDecision = null;
       session.currentRevealId = null;
+      const timer = ensureSessionTimer(session);
+      timer.remainingSec = timer.durationSec;
+      timer.isRunning = true;
+      timer.endsAt = Date.now() + timer.durationSec * 1000;
       Object.keys(session.participants || {}).forEach((uid) => {
         session.participants[uid].vote = null;
         session.participants[uid].hasVoted = false;
@@ -1591,7 +1752,17 @@ async function setStory(name) {
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (session) {
+      const previousStory = safeText(session.story);
+      const storyChanged = !!clean && clean !== previousStory;
       session.story = clean;
+
+      if (storyChanged) {
+        const timer = ensureSessionTimer(session);
+        timer.remainingSec = timer.durationSec;
+        timer.isRunning = true;
+        timer.endsAt = Date.now() + timer.durationSec * 1000;
+      }
+
       const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
       await ablyPublishState(channel, session);
       ablyPublishAdminAudit(session);
@@ -1599,7 +1770,17 @@ async function setStory(name) {
   } else {
     const session = getDemoSession(sessionId);
     if (session) {
+      const previousStory = safeText(session.story);
+      const storyChanged = !!clean && clean !== previousStory;
       session.story = clean;
+
+      if (storyChanged) {
+        const timer = ensureSessionTimer(session);
+        timer.remainingSec = timer.durationSec;
+        timer.isRunning = true;
+        timer.endsAt = Date.now() + timer.durationSec * 1000;
+      }
+
       saveDemoSession(sessionId, session);
       captureAdminSessionAudit(session);
     }
@@ -2397,9 +2578,40 @@ function el(tag, cls, text) {
   return e;
 }
 
+function renderStoryTimer(session) {
+  const timerRoot = document.querySelector('.story-timer');
+  const timerValueEl = document.getElementById('story-timer-value');
+  const actionEl = document.getElementById('btn-story-timer-action');
+  if (!timerRoot || !timerValueEl || !actionEl) return;
+
+  const runtime = getStoryTimerRuntime(session);
+  const clockText = formatStoryTimerClock(runtime.remainingSec);
+  timerValueEl.textContent = clockText;
+  timerValueEl.setAttribute('aria-label', `Time remaining ${clockText}`);
+
+  timerRoot.classList.toggle('is-running', runtime.isRunning);
+  timerRoot.classList.toggle('is-warning', runtime.isWarning);
+  timerRoot.classList.toggle('is-expired', runtime.isExpired);
+
+  const optionButtons = document.querySelectorAll('.story-timer-option');
+  optionButtons.forEach((btn) => {
+    const seconds = Number(btn.dataset.seconds);
+    const isSelected = seconds === runtime.timer.durationSec;
+    btn.classList.toggle('is-selected', isSelected);
+    btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    btn.disabled = !state.isModerator;
+  });
+
+  const actionLabel = runtime.isRunning ? 'reset' : 'start';
+  actionEl.textContent = actionLabel;
+  actionEl.disabled = !state.isModerator;
+  actionEl.setAttribute('aria-label', runtime.isRunning ? 'Reset timer to selected duration' : 'Start timer');
+}
+
 function updateGameHeader(session) {
   document.getElementById('game-session-name').textContent = session.name || 'Session';
   document.getElementById('game-story-display').textContent = session.story || '—';
+  renderStoryTimer(session);
 
   document.querySelectorAll('.mod-only').forEach((node) => {
     node.style.display = state.isModerator ? '' : 'none';
@@ -2855,6 +3067,7 @@ async function enterGame(sessionId) {
   showView('loading');
   try {
     showView('game');
+    startStoryTimerTicker();
     setHistorySidebarExpanded(false);
     setExamplesSidebarExpanded(false);
     syncCalcLabelWidth();
@@ -2878,6 +3091,7 @@ async function enterGame(sessionId) {
 
 function leaveGame() {
   unsubscribeFromSession();
+  stopStoryTimerTicker();
   setHistorySidebarExpanded(false);
   setExamplesSidebarExpanded(false);
   setCalcDetailsExpanded(false);
@@ -3024,6 +3238,23 @@ function setupEventListeners() {
       }
       document.body.removeChild(tmp);
     }
+  });
+
+  document.querySelectorAll('.story-timer-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!state.isModerator) return;
+      setTimerDuration(Number(btn.dataset.seconds));
+    });
+  });
+
+  document.getElementById('btn-story-timer-action').addEventListener('click', () => {
+    if (!state.isModerator || !state.sessionData) return;
+    const runtime = getStoryTimerRuntime(state.sessionData);
+    if (runtime.isRunning) {
+      resetStoryTimer();
+      return;
+    }
+    startStoryTimer();
   });
 
   document.getElementById('btn-toggle-history-float').addEventListener('click', toggleHistorySidebar);

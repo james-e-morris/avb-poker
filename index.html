@@ -207,6 +207,19 @@
         </div>
         <div class="game-header-center">
           <div class="story-bar">
+            <div class="story-timer" aria-live="polite" aria-label="Story timer">
+              <div class="story-timer-controls mod-only">
+                <div class="story-timer-options" role="group" aria-label="Timer duration">
+                  <button id="btn-timer-30" type="button" class="story-timer-option is-selected" data-seconds="30">
+                    30
+                  </button>
+                  <button id="btn-timer-60" type="button" class="story-timer-option" data-seconds="60">60</button>
+                  <button id="btn-timer-90" type="button" class="story-timer-option" data-seconds="90">90</button>
+                </div>
+                <button id="btn-story-timer-action" type="button" class="story-timer-action muted-text">start</button>
+              </div>
+              <span id="story-timer-value" class="story-timer-value">00:30</span>
+            </div>
             <span class="story-label">Story</span>
             <span id="game-story-display" class="story-value">—</span>
             <button id="btn-edit-story" class="icon-btn mod-only" title="Story Name" style="display: none">

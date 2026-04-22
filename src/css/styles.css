@@ -1439,9 +1439,6 @@ body.timer-reverse-ripple-active::before {
   transition: grid-template-columns 0.18s ease;
 }
 
-.calculator.calc-details-open {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
 .calc-inputs {
   background: var(--surface-2);
   border: 1.5px solid var(--border);

@@ -45,6 +45,8 @@
   --r: 8px;
   --r-lg: 14px;
   --font: 'Inter', system-ui, sans-serif;
+  --history-sidebar-width: 320px;
+  --right-sidebar-width: 360px;
 }
 
 [data-theme='dark'] {
@@ -1879,7 +1881,7 @@ select {
   top: 64px;
   left: 0;
   bottom: 0;
-  width: min(320px, 86vw);
+  width: min(var(--history-sidebar-width), 86vw);
   padding: 12px;
   border-right: 1.5px solid var(--border);
   background: var(--surface);
@@ -1954,7 +1956,7 @@ select {
   top: 64px;
   right: 0;
   bottom: 0;
-  width: min(360px, 88vw);
+  width: min(var(--right-sidebar-width), 88vw);
   padding: 12px;
   border-left: 1.5px solid var(--border);
   background: var(--surface);
@@ -1976,7 +1978,7 @@ select {
   top: 64px;
   right: 0;
   bottom: 0;
-  width: min(360px, 88vw);
+  width: min(var(--right-sidebar-width), 88vw);
   padding: 12px;
   border-left: 1.5px solid var(--border);
   background: var(--surface);
@@ -1991,6 +1993,30 @@ select {
 
 .jira-prompt-sidebar.is-collapsed {
   transform: translateX(102%);
+}
+
+#view-game.sidebar-push-mode .history-sidebar,
+#view-game.sidebar-push-mode .examples-sidebar,
+#view-game.sidebar-push-mode .jira-prompt-sidebar {
+  position: absolute;
+}
+
+#view-game.sidebar-push-mode.history-open .participants-section,
+#view-game.sidebar-push-mode.history-open .status-bar,
+#view-game.sidebar-push-mode.history-open .game-main,
+#view-game.sidebar-push-mode.history-open .game-footer {
+  padding-left: calc(16px + min(var(--history-sidebar-width), 86vw));
+}
+
+#view-game.sidebar-push-mode.examples-open .participants-section,
+#view-game.sidebar-push-mode.examples-open .status-bar,
+#view-game.sidebar-push-mode.examples-open .game-main,
+#view-game.sidebar-push-mode.examples-open .game-footer,
+#view-game.sidebar-push-mode.jira-prompt-open .participants-section,
+#view-game.sidebar-push-mode.jira-prompt-open .status-bar,
+#view-game.sidebar-push-mode.jira-prompt-open .game-main,
+#view-game.sidebar-push-mode.jira-prompt-open .game-footer {
+  padding-right: calc(16px + min(var(--right-sidebar-width), 88vw));
 }
 
 .examples-sidebar-head {

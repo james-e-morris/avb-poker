@@ -33,6 +33,9 @@ const state = {
 };
 
 const CALC_METRIC_KEYS = ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'];
+const SIDEBAR_LAYOUT_MIN_CONTENT_WIDTH = 940;
+const SIDEBAR_LAYOUT_HISTORY_WIDTH = 320;
+const SIDEBAR_LAYOUT_RIGHT_WIDTH = 360;
 
 const ADMIN_UID = 'u_4005191935_1395682239';
 const ADMIN_HISTORY_KEY = 'pp_admin_history_v1';
@@ -716,6 +719,7 @@ function setJiraPromptSidebarExpanded(expanded) {
   sidebar.classList.toggle('is-collapsed', !expanded);
   openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   openBtn.hidden = !!expanded;
+  updateSidebarLayoutMode();
 }
 
 function toggleJiraPromptSidebar() {
@@ -733,6 +737,23 @@ function clearJiraPasteInput() {
 
   state.aiConfidence = null;
   updateCalcConfidenceMessage();
+}
+
+function updateSidebarLayoutMode() {
+  const gameView = document.getElementById('view-game');
+  if (!gameView) return false;
+
+  const historyOpen = gameView.classList.contains('history-open');
+  const rightSidebarOpen =
+    gameView.classList.contains('examples-open') || gameView.classList.contains('jira-prompt-open');
+  const requiredWidth =
+    SIDEBAR_LAYOUT_MIN_CONTENT_WIDTH +
+    (historyOpen ? SIDEBAR_LAYOUT_HISTORY_WIDTH : 0) +
+    (rightSidebarOpen ? SIDEBAR_LAYOUT_RIGHT_WIDTH : 0);
+  const shouldPush = (historyOpen || rightSidebarOpen) && window.innerWidth >= requiredWidth;
+
+  gameView.classList.toggle('sidebar-push-mode', shouldPush);
+  return shouldPush;
 }
 
 function summarizeVotes(participants) {
@@ -853,6 +874,7 @@ function setHistorySidebarExpanded(expanded) {
   sidebar.classList.toggle('is-collapsed', !expanded);
   openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   openBtn.hidden = !!expanded;
+  updateSidebarLayoutMode();
 }
 
 function toggleHistorySidebar() {
@@ -871,6 +893,7 @@ function setExamplesSidebarExpanded(expanded) {
   sidebar.classList.toggle('is-collapsed', !expanded);
   openBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   openBtn.hidden = !!expanded;
+  updateSidebarLayoutMode();
 }
 
 function toggleExamplesSidebar() {
@@ -3097,6 +3120,7 @@ function setupEventListeners() {
     const examplesOpen = gameView.classList.contains('examples-open');
     const jiraPromptOpen = gameView.classList.contains('jira-prompt-open');
     if (!historyOpen && !examplesOpen && !jiraPromptOpen) return;
+    if (updateSidebarLayoutMode()) return;
 
     const sidebar = document.getElementById('history-sidebar');
     const fab = document.getElementById('btn-toggle-history-float');
@@ -3139,7 +3163,10 @@ function setupEventListeners() {
     if (document.getElementById('view-game')?.classList.contains('active')) {
       syncCalcLabelWidth();
     }
+    updateSidebarLayoutMode();
   });
+
+  updateSidebarLayoutMode();
 
   // ResizeObserver keeps buttons adaptive whenever the calc-inputs element
   // changes size (window resize, panel open/close, etc.)

@@ -32,8 +32,10 @@ const state = {
   coffeeVotePourStartedAt: 0,
   storyTimerTicker: null,
   storyTimerWasRunning: false,
+  storyTimerWasExpired: false,
   storyTimerPowerupTimeout: null,
   storyTimerRippleTimeout: null,
+  storyTimerReverseRippleTimeout: null,
 };
 
 const CALC_METRIC_KEYS = ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'];
@@ -2695,6 +2697,10 @@ function clearTimerBurstEffects() {
     window.clearTimeout(state.storyTimerRippleTimeout);
     state.storyTimerRippleTimeout = null;
   }
+  if (state.storyTimerReverseRippleTimeout) {
+    window.clearTimeout(state.storyTimerReverseRippleTimeout);
+    state.storyTimerReverseRippleTimeout = null;
+  }
 
   const timerRoot = document.querySelector('.story-timer');
   if (timerRoot) {
@@ -2702,6 +2708,7 @@ function clearTimerBurstEffects() {
   }
 
   document.body.classList.remove('timer-ripple-active');
+  document.body.classList.remove('timer-reverse-ripple-active');
   clearTimerWavePopEffects();
   document.body.style.removeProperty('--timer-ripple-x');
   document.body.style.removeProperty('--timer-ripple-y');
@@ -2710,6 +2717,59 @@ function clearTimerBurstEffects() {
   document.body.style.removeProperty('--timer-ripple-start-r');
   document.body.style.removeProperty('--timer-ripple-start-bw');
   document.body.style.removeProperty('--timer-ripple-size');
+  document.body.style.removeProperty('--timer-warning-glow');
+}
+
+function triggerTimerExpiredRipple(timerRoot) {
+  if (!timerRoot) return;
+
+  const timerValueEl = document.getElementById('story-timer-value');
+  if (!timerValueEl) return;
+
+  const timerRect = timerValueEl.getBoundingClientRect();
+  const originX = timerRect.left + timerRect.width / 2;
+  const originY = timerRect.top + timerRect.height / 2;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const maxDistance = Math.max(
+    Math.hypot(originX, originY),
+    Math.hypot(viewportWidth - originX, originY),
+    Math.hypot(originX, viewportHeight - originY),
+    Math.hypot(viewportWidth - originX, viewportHeight - originY)
+  );
+
+  if (state.storyTimerReverseRippleTimeout) {
+    window.clearTimeout(state.storyTimerReverseRippleTimeout);
+    state.storyTimerReverseRippleTimeout = null;
+  }
+
+  const timerStyles = window.getComputedStyle(timerValueEl);
+  const startBorderWidth = parseFloat(timerStyles.borderTopWidth) || 2;
+  const startRadius = parseFloat(timerStyles.borderTopLeftRadius) || 10;
+
+  document.body.style.setProperty('--timer-ripple-x', `${originX}px`);
+  document.body.style.setProperty('--timer-ripple-y', `${originY}px`);
+  document.body.style.setProperty('--timer-ripple-start-w', `${Math.max(1, Math.round(timerRect.width))}px`);
+  document.body.style.setProperty('--timer-ripple-start-h', `${Math.max(1, Math.round(timerRect.height))}px`);
+  document.body.style.setProperty('--timer-ripple-start-r', `${Math.max(2, Math.round(startRadius))}px`);
+  document.body.style.setProperty('--timer-ripple-start-bw', `${Math.max(1, startBorderWidth)}px`);
+  document.body.style.setProperty('--timer-ripple-size', `${Math.ceil(maxDistance * 2)}px`);
+
+  document.body.classList.remove('timer-reverse-ripple-active');
+  void document.body.offsetWidth;
+  document.body.classList.add('timer-reverse-ripple-active');
+
+  state.storyTimerReverseRippleTimeout = window.setTimeout(() => {
+    document.body.classList.remove('timer-reverse-ripple-active');
+    document.body.style.removeProperty('--timer-ripple-x');
+    document.body.style.removeProperty('--timer-ripple-y');
+    document.body.style.removeProperty('--timer-ripple-start-w');
+    document.body.style.removeProperty('--timer-ripple-start-h');
+    document.body.style.removeProperty('--timer-ripple-start-r');
+    document.body.style.removeProperty('--timer-ripple-start-bw');
+    document.body.style.removeProperty('--timer-ripple-size');
+    state.storyTimerReverseRippleTimeout = null;
+  }, 1200);
 }
 
 function renderStoryTimer(session) {
@@ -2727,10 +2787,21 @@ function renderStoryTimer(session) {
   timerRoot.classList.toggle('is-warning', runtime.isWarning);
   timerRoot.classList.toggle('is-expired', runtime.isExpired);
 
+  // Update warning glow intensity based on remaining seconds (0-10 sec)
+  const warningGlow = runtime.isWarning 
+    ? Math.max(0, Math.min(1, (TIMER_WARNING_SECONDS - runtime.remainingSec) / TIMER_WARNING_SECONDS))
+    : 0;
+  document.body.style.setProperty('--timer-warning-glow', warningGlow.toString());
+
   if (runtime.isRunning && !state.storyTimerWasRunning) {
     triggerStoryTimerStartBurst(timerRoot);
   }
   state.storyTimerWasRunning = runtime.isRunning;
+
+  if (runtime.isExpired && !state.storyTimerWasExpired) {
+    triggerTimerExpiredRipple(timerRoot);
+  }
+  state.storyTimerWasExpired = runtime.isExpired;
 
   const optionButtons = document.querySelectorAll('.story-timer-option');
   optionButtons.forEach((btn) => {
@@ -2741,7 +2812,7 @@ function renderStoryTimer(session) {
     btn.disabled = !state.isModerator;
   });
 
-  const actionLabel = runtime.isRunning ? 'reset' : 'start';
+  const actionLabel = runtime.isRunning ? 'reset timer' : 'start timer';
   actionEl.textContent = actionLabel;
   actionEl.disabled = !state.isModerator;
   actionEl.setAttribute('aria-label', runtime.isRunning ? 'Reset timer to selected duration' : 'Start timer');
@@ -3239,6 +3310,7 @@ function leaveGame() {
   state.currentVote = null;
   state.wasRevealed = false;
   state.storyTimerWasRunning = false;
+  state.storyTimerWasExpired = false;
   clearTimerBurstEffects();
   renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);

@@ -544,7 +544,12 @@ select {
 .story-timer.is-warning .story-timer-value {
   color: var(--warning);
   border-color: var(--warning);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning) 28%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--warning) 28%, transparent),
+    0 0 calc(16px * var(--timer-warning-glow, 0))
+      color-mix(in srgb, var(--warning) calc(45% * var(--timer-warning-glow, 0)), transparent),
+    0 0 calc(32px * var(--timer-warning-glow, 0))
+      color-mix(in srgb, var(--warning) calc(35% * var(--timer-warning-glow, 0)), transparent);
 }
 
 .story-timer.is-expired .story-timer-value {
@@ -586,6 +591,25 @@ body.timer-ripple-active .timer-wave-pop {
   animation: timer-wave-pop 280ms cubic-bezier(0.2, 0.8, 0.22, 1) var(--timer-wave-delay, 0ms) both;
   transform-origin: center;
   will-change: transform, filter;
+}
+
+body.timer-reverse-ripple-active::before {
+  content: '';
+  position: fixed;
+  left: var(--timer-ripple-x, 50vw);
+  top: var(--timer-ripple-y, 20vh);
+  width: var(--timer-ripple-size, 200vmax);
+  height: var(--timer-ripple-size, 200vmax);
+  pointer-events: none;
+  z-index: var(--z-toast);
+  border: 24px solid color-mix(in srgb, var(--error) 76%, transparent);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--error) 66%, transparent),
+    0 0 84px color-mix(in srgb, var(--error) 78%, transparent);
+  opacity: 0.2;
+  transform: translate(-50%, -50%);
+  animation: timer-reverse-ripple 1.2s ease-in forwards;
 }
 
 .story-timer-options {
@@ -716,6 +740,36 @@ body.timer-ripple-active .timer-wave-pop {
   100% {
     transform: translate3d(0, 0, 0) scale(1);
     filter: brightness(1);
+  }
+}
+
+@keyframes timer-reverse-ripple {
+  0% {
+    width: var(--timer-ripple-size, 200vmax);
+    height: var(--timer-ripple-size, 200vmax);
+    border-radius: 999px;
+    border-width: 24px;
+    opacity: 0.2;
+    box-shadow:
+      0 0 0 8px color-mix(in srgb, var(--error) 66%, transparent),
+      0 0 84px color-mix(in srgb, var(--error) 78%, transparent);
+  }
+  28% {
+    opacity: 0.52;
+    border-width: 16px;
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--error) 58%, transparent),
+      0 0 42px color-mix(in srgb, var(--error) 66%, transparent);
+  }
+  100% {
+    width: var(--timer-ripple-start-w, 70px);
+    height: var(--timer-ripple-start-h, 38px);
+    border-radius: var(--timer-ripple-start-r, 10px);
+    border-width: var(--timer-ripple-start-bw, 2px);
+    opacity: 0.24;
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--error) 42%, transparent),
+      0 0 10px color-mix(in srgb, var(--error) 36%, transparent);
   }
 }
 

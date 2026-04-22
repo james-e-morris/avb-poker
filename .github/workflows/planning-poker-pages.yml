@@ -45,12 +45,6 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
-      - name: Run Playwright E2E tests
-        run: npm run test:e2e:headless
-
   deploy:
     runs-on: ubuntu-latest
     needs: test

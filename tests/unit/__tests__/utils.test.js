@@ -15,6 +15,10 @@ const {
   getRevealDisabledReason,
   getNextStoryDisabledReason,
   buildAuditClipboardText,
+  getParticipantRankingSummary,
+  summarizeVotesForAudit,
+  getCurrentRevealTimestamp,
+  formatAuditTimestampEst,
 } = require('../../../src/js/app-exports.js');
 
 describe('Utility Functions', () => {
@@ -399,6 +403,168 @@ describe('Utility Functions', () => {
       const text = buildAuditClipboardText(session, 'XYZ789');
       expect(text).toContain('#### AVB Planning Poker Results');
       expect(text).toContain('    - Alice: 13 (3-H-M-M-L-L)');
+    });
+
+    test('handles non-standard numeric and string ranking levels', () => {
+      const session = {
+        status: 'revealed',
+        story: 'Ranking edge cases',
+        finalDecision: null,
+        resultsHistory: [{ id: 'r1', revealedAt: Date.parse('2026-01-01T12:00:00.000Z') }],
+        participants: {
+          u1: {
+            name: 'Dana',
+            vote: '21',
+            hasVoted: true,
+            joinedAt: 1,
+            rankings: {
+              size: 5,
+              complexity: 4,
+              uncertainty: 'critical',
+              cognitive: 3,
+              deps: 'med',
+              risk: ' custom ',
+            },
+          },
+        },
+      };
+
+      const text = buildAuditClipboardText(session, 'ZZZ111');
+      expect(text).toContain('    - Dana: 21 (5-4-critical-H-M-custom)');
+    });
+
+    test('handles revealed sessions without participants', () => {
+      const session = {
+        status: 'revealed',
+        story: '',
+        finalDecision: null,
+        resultsHistory: [],
+      };
+
+      const text = buildAuditClipboardText(session, 'NOPE123');
+      expect(text).toContain('- Story name: **Untitled story**');
+      expect(text).toContain('No votes');
+      expect(text).toContain('Near —');
+      expect(text).toContain('Voted 0/0');
+      expect(text).toContain('    - none');
+    });
+  });
+
+  describe('audit helper exports', () => {
+    test('getParticipantRankingSummary supports alternate ranking source fields', () => {
+      const viaRanking = getParticipantRankingSummary({
+        ranking: {
+          size: 2,
+          complexity: 1,
+          uncertainty: 2,
+          cognitiveLoad: 3,
+          dependencies: 2,
+          risk: 3,
+        },
+      });
+      expect(viaRanking).toBe(' (2-L-M-H-M-H)');
+
+      const viaVoteMeta = getParticipantRankingSummary({
+        voteMeta: {
+          rankings: {
+            size: null,
+            complexity: '',
+            uncertainty: undefined,
+            cognitive: null,
+            deps: '',
+            risk: null,
+          },
+        },
+      });
+      expect(viaVoteMeta).toBe('');
+
+      const withUnknownParts = getParticipantRankingSummary({
+        ranking: {
+          size: null,
+          complexity: 'high',
+          uncertainty: null,
+          cognitive: undefined,
+          deps: '',
+          risk: undefined,
+        },
+      });
+      expect(withUnknownParts).toBe(' (?-H-?-?-?-?)');
+    });
+
+    test('summarizeVotesForAudit calculates consensus, average, and nearest', () => {
+      const summary = summarizeVotesForAudit({
+        u2: { vote: '8', joinedAt: 20 },
+        u1: { vote: '5', joinedAt: 10 },
+        u3: { vote: 'x', joinedAt: 30 },
+      });
+
+      expect(summary.entries[0][0]).toBe('u1');
+      expect(summary.entries[1][0]).toBe('u2');
+      expect(summary.avg).toBe(6.5);
+      expect(summary.isConsensus).toBe(false);
+      expect(summary.distinctNumericVotes).toBe(2);
+      expect(summary.nearest).toBe(8);
+    });
+
+    test('summarizeVotesForAudit returns null average when no numeric votes', () => {
+      const summary = summarizeVotesForAudit({
+        u1: { vote: '?', joinedAt: 1 },
+      });
+
+      expect(summary.avg).toBeNull();
+      expect(summary.distinctNumericVotes).toBe(0);
+      expect(summary.nearest).toBeNull();
+
+      const emptySummary = summarizeVotesForAudit();
+      expect(emptySummary.entries).toEqual([]);
+      expect(emptySummary.avg).toBeNull();
+    });
+
+    test('getCurrentRevealTimestamp uses current reveal ID and falls back when missing', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+      const fromCurrent = getCurrentRevealTimestamp({
+        currentRevealId: 'r2',
+        resultsHistory: [
+          { id: 'r1', revealedAt: 111 },
+          { id: 'r2', revealedAt: 222 },
+        ],
+      });
+      expect(fromCurrent).toBe(222);
+
+      const fromFallback = getCurrentRevealTimestamp({
+        currentRevealId: 'missing',
+        resultsHistory: [{ id: 'r1', revealedAt: 333 }],
+      });
+      expect(fromFallback).toBe(1234567890);
+
+      const fromNoHistory = getCurrentRevealTimestamp({ currentRevealId: 'missing' });
+      expect(fromNoHistory).toBe(1234567890);
+
+      nowSpy.mockRestore();
+    });
+
+    test('formatAuditTimestampEst returns stable EST-formatted output', () => {
+      const output = formatAuditTimestampEst(Date.parse('2026-01-01T12:00:00.000Z'));
+      expect(output).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} EST$/);
+
+      const invalidOutput = formatAuditTimestampEst('not-a-number');
+      expect(invalidOutput).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} EST$/);
+    });
+
+    test('buildAuditClipboardText falls back to Anonymous and em dash vote', () => {
+      const session = {
+        status: 'revealed',
+        story: 'Fallback test',
+        finalDecision: null,
+        resultsHistory: [{ id: 'r1', revealedAt: Date.parse('2026-01-01T12:00:00.000Z') }],
+        participants: {
+          u1: { name: '', vote: null, hasVoted: true, joinedAt: 1 },
+        },
+      };
+
+      const text = buildAuditClipboardText(session, 'FALL123');
+      expect(text).toContain('    - Anonymous: —');
     });
   });
 });

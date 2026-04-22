@@ -241,6 +241,26 @@ Testing expectations and integration boundaries are not fully specified.
       );
     });
 
+    test('parses inline confidence feedback and stops at next known label', () => {
+      const text = [
+        'Size: 2',
+        'Complexity: Medium',
+        'Uncertainty: Low',
+        'Cognitive Load: Low',
+        'Dependencies: Low',
+        'Risk: Low',
+        'Confidence: 7',
+        'Confidence Feedback: Strong acceptance criteria with clear boundaries.',
+        'Suggested Story Points: 3',
+        '- medium complexity is the main driver',
+      ].join('\n');
+
+      const result = parseJiraPromptResponse(text);
+      expect(result.confidence).toBe(7);
+      expect(result.confidenceFeedback).toBe('Strong acceptance criteria with clear boundaries.');
+      expect(result.spReason).toBe('medium complexity is the main driver');
+    });
+
     test('ignores invalid confidence values without failing the whole parse', () => {
       const text = [
         'Size: 2',
@@ -256,6 +276,25 @@ Testing expectations and integration boundaries are not fully specified.
       const result = parseJiraPromptResponse(text);
       expect(result.confidence).toBeNull();
       expect(result.confidenceFeedback).toBe('This value is out of range and should not be trusted.');
+    });
+
+    test('returns null confidence feedback when section is empty', () => {
+      const text = [
+        'Size: 2',
+        'Complexity: Low',
+        'Uncertainty: Low',
+        'Cognitive Load: Low',
+        'Dependencies: Low',
+        'Risk: Low',
+        'Confidence: 8',
+        'Confidence Feedback:',
+        '',
+        'Suggested Story Points: 2',
+      ].join('\n');
+
+      const result = parseJiraPromptResponse(text);
+      expect(result.confidence).toBe(8);
+      expect(result.confidenceFeedback).toBeNull();
     });
   });
 

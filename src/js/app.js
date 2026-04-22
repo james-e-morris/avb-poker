@@ -54,6 +54,8 @@ const ADMIN_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const ADMIN_MAX_RECORDS = 500;
 const ABLY_AUDIT_EVENT = 'session_admin_audit';
 
+let revealObserver = null;
+
 const EXAMPLE_SCENARIOS = [
   {
     id: 'baseline-min',
@@ -2304,6 +2306,7 @@ function renderExamplesSidebar() {
   });
 
   syncExampleSelectionFromCalc();
+  queueRevealAnimations(listEl);
 }
 
 function updateCalcOutput() {
@@ -2583,6 +2586,102 @@ function el(tag, cls, text) {
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
   return e;
+}
+
+function prefersReducedMotion() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function setupAlivePanels() {
+  if (prefersReducedMotion()) return;
+
+  const targets = document.querySelectorAll('.hero, .create-card, .join-card, .admin-dashboard');
+  targets.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    node.classList.add('alive-panel');
+
+    node.addEventListener('pointermove', (event) => {
+      if (window.matchMedia && !window.matchMedia('(pointer:fine)').matches) return;
+      const rect = node.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / Math.max(rect.width, 1);
+      const y = (event.clientY - rect.top) / Math.max(rect.height, 1);
+      const tiltY = (x - 0.5) * 3.8;
+      const tiltX = (0.5 - y) * 2.8;
+      node.style.setProperty('--alive-tilt-x', `${tiltX.toFixed(2)}deg`);
+      node.style.setProperty('--alive-tilt-y', `${tiltY.toFixed(2)}deg`);
+    });
+
+    node.addEventListener('pointerleave', () => {
+      node.style.setProperty('--alive-tilt-x', '0deg');
+      node.style.setProperty('--alive-tilt-y', '0deg');
+    });
+  });
+}
+
+function setupInteractionRipples() {
+  document.addEventListener('pointerdown', (event) => {
+    if (prefersReducedMotion()) return;
+
+    const target = event.target.closest('.btn, .icon-btn, .scale-btn, .decision-chip, .example-entry');
+    if (!(target instanceof HTMLElement)) return;
+    if (target.matches(':disabled') || target.getAttribute('aria-disabled') === 'true') return;
+
+    const rect = target.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'interaction-ripple';
+    ripple.style.left = `${event.clientX - rect.left}px`;
+    ripple.style.top = `${event.clientY - rect.top}px`;
+    target.appendChild(ripple);
+
+    ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+  });
+}
+
+function queueRevealAnimations(root = document) {
+  const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+  const revealables = scope.querySelectorAll('.examples-group, .history-entry, .result-vote-chip');
+
+  revealables.forEach((node, index) => {
+    if (!(node instanceof HTMLElement) || node.dataset.revealReady === 'true') return;
+    node.dataset.revealReady = 'true';
+    node.classList.add('reveal-ready');
+    node.style.transitionDelay = `${Math.min(index * 40, 240)}ms`;
+
+    if (prefersReducedMotion()) {
+      node.classList.add('is-inview');
+      return;
+    }
+
+    if (!revealObserver) {
+      node.classList.add('is-inview');
+      return;
+    }
+
+    revealObserver.observe(node);
+  });
+}
+
+function setupRevealObserver() {
+  if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
+    revealObserver = null;
+    queueRevealAnimations(document);
+    return;
+  }
+
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        if (entry.target instanceof HTMLElement) {
+          entry.target.classList.add('is-inview');
+        }
+        revealObserver.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.15, rootMargin: '0px 0px -10% 0px' }
+  );
+
+  queueRevealAnimations(document);
 }
 
 function applyTimerWavePopEffects(originX, originY, maxDistance) {
@@ -3216,6 +3315,8 @@ function renderSessionHistory(historyItems) {
     row.appendChild(votes);
     listEl.appendChild(row);
   });
+
+  queueRevealAnimations(listEl);
 }
 
 function hideResults() {
@@ -3273,6 +3374,7 @@ function showView(name) {
   const target = document.getElementById(`view-${name}`);
   if (target) target.classList.add('active');
   if (name === 'home') renderAdminDashboard();
+  if (target) queueRevealAnimations(target);
 }
 
 async function enterGame(sessionId) {
@@ -3326,6 +3428,7 @@ let toastTimer = null;
 function showToast(message, type = 'info', duration = 3000) {
   const t = document.getElementById('toast');
   t.textContent = message; // safe: textContent, not innerHTML
+  t.style.setProperty('--toast-duration', `${Math.max(300, duration)}ms`);
   t.className = `toast toast-${type} visible`;
   t.removeAttribute('hidden');
 
@@ -3354,6 +3457,10 @@ function toggleTheme() {
 // ---- Event Listeners ---------------------------------------
 
 function setupEventListeners() {
+  setupAlivePanels();
+  setupInteractionRipples();
+  setupRevealObserver();
+
   // ---- Home ----
   document.getElementById('btn-create').addEventListener('click', async () => {
     const sessionName = document.getElementById('session-name-input').value.trim();

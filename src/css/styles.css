@@ -47,6 +47,7 @@
   --font: 'Inter', system-ui, sans-serif;
   --history-sidebar-width: 320px;
   --right-sidebar-width: 360px;
+  --alive-ease: cubic-bezier(0.22, 0.9, 0.28, 1);
 }
 
 /* ---- Accessibility --------------------------------------- */
@@ -175,6 +176,28 @@ select {
   transition: all 0.15s ease;
   white-space: nowrap;
 }
+
+.btn,
+.icon-btn,
+.scale-btn,
+.decision-chip,
+.example-entry {
+  position: relative;
+  isolation: isolate;
+}
+
+.interaction-ripple {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 42%, #ffffff);
+  transform: translate(-50%, -50%) scale(0.35);
+  opacity: 0.5;
+  animation: interaction-ripple-expand 520ms var(--alive-ease) forwards;
+  pointer-events: none;
+  z-index: -1;
+}
 .btn-primary {
   background: var(--primary);
   color: var(--primary-fg);
@@ -282,6 +305,12 @@ select {
   box-shadow: var(--shadow);
 }
 
+.alive-panel {
+  transform-style: preserve-3d;
+  transition: transform 0.24s var(--alive-ease);
+  transform: perspective(960px) rotateX(var(--alive-tilt-x, 0deg)) rotateY(var(--alive-tilt-y, 0deg));
+}
+
 /* ---- Form ------------------------------------------------- */
 .form-group {
   display: flex;
@@ -358,6 +387,26 @@ select {
 
 .hero {
   text-align: center;
+}
+
+#view-home.active .hero {
+  animation: home-fade-up 620ms var(--alive-ease) both;
+}
+
+#view-home.active .home-divider {
+  animation: home-fade-up 620ms var(--alive-ease) 70ms both;
+}
+
+#view-home.active .create-card {
+  animation: home-fade-up 680ms var(--alive-ease) 90ms both;
+}
+
+#view-home.active .join-card {
+  animation: home-fade-up 680ms var(--alive-ease) 170ms both;
+}
+
+#view-home.active .admin-dashboard:not([hidden]) {
+  animation: home-fade-up 680ms var(--alive-ease) 210ms both;
 }
 .hero h1 {
   font-size: 2.2rem;
@@ -1643,6 +1692,27 @@ body.timer-reverse-ripple-active::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  #view-home.active .hero,
+  #view-home.active .home-divider,
+  #view-home.active .create-card,
+  #view-home.active .join-card,
+  #view-home.active .admin-dashboard:not([hidden]) {
+    animation: none;
+  }
+
+  .alive-panel,
+  .reveal-ready,
+  .reveal-ready.is-inview {
+    transform: none;
+    transition: none;
+  }
+
+  .interaction-ripple,
+  .toast.visible::after {
+    animation: none;
+    display: none;
+  }
+
   .vote-card.selected[data-value='☕'] .vote-card-value.coffee-pour-enter,
   .vote-card.selected[data-value='?'] .vote-card-value.question-panic-enter,
   .vote-card.selected[data-value='0'],
@@ -2568,6 +2638,19 @@ body.timer-reverse-ripple-active::before {
   gap: 8px;
 }
 
+.reveal-ready {
+  opacity: 0;
+  transform: translateY(16px) scale(0.99);
+}
+
+.reveal-ready.is-inview {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 420ms ease,
+    transform 460ms var(--alive-ease);
+}
+
 .examples-group-title {
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -2816,6 +2899,7 @@ body.timer-reverse-ripple-active::before {
     transform 0.2s;
   pointer-events: none;
   white-space: nowrap;
+  --toast-duration: 3000ms;
 }
 .toast[hidden] {
   display: none;
@@ -2823,6 +2907,23 @@ body.timer-reverse-ripple-active::before {
 .toast.visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+.toast::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  height: 2px;
+  transform-origin: left;
+  transform: scaleX(0);
+  background: color-mix(in srgb, currentColor 70%, transparent);
+  opacity: 0.62;
+}
+
+.toast.visible::after {
+  animation: toast-life var(--toast-duration) linear forwards;
 }
 .toast.toast-success {
   background: #065f46;
@@ -2835,6 +2936,37 @@ body.timer-reverse-ripple-active::before {
 .toast.toast-info {
   background: #1e3a5f;
   color: #93c5fd;
+}
+
+@keyframes home-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes interaction-ripple-expand {
+  0% {
+    opacity: 0.48;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(11);
+  }
+}
+
+@keyframes toast-life {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* ---- Demo mode badge ------------------------------------- */

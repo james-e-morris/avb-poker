@@ -159,6 +159,38 @@ Testing expectations and integration boundaries are not fully specified.
       expect(result).not.toBeNull();
     });
 
+    test('parses when Suggested Story Points appears before factor lines', () => {
+      const text = [
+        'Suggested Story Points: 8',
+        '- size 5 with medium complexity and dependencies',
+        'Size: 5',
+        '- touches several modules in one workflow',
+        'Complexity: Medium',
+        '- branching logic introduces non-trivial paths',
+        'Uncertainty: Low',
+        'Cognitive Load: Medium',
+        '- requires coordinating backend and frontend assumptions',
+        'Dependencies: Medium',
+        '- one external contract dependency',
+        'Risk: Low',
+        'Confidence: 7',
+        'Confidence Feedback:',
+        'Acceptance criteria are specific enough for a stable estimate.',
+      ].join('\n');
+
+      const result = parseJiraPromptResponse(text);
+      expect(result).not.toBeNull();
+      expect(result.size).toBe(5);
+      expect(result.complexity).toBe(2);
+      expect(result.uncertainty).toBe(1);
+      expect(result.cognitive).toBe(2);
+      expect(result.deps).toBe(2);
+      expect(result.risk).toBe(1);
+      expect(result.spReason).toBe('size 5 with medium complexity and dependencies');
+      expect(result.confidence).toBe(7);
+      expect(result.confidenceFeedback).toBe('Acceptance criteria are specific enough for a stable estimate.');
+    });
+
     test('works without Suggested Story Points line', () => {
       const text = `Size: 5\nComplexity: Medium\nUncertainty: Low\nCognitive Load: Medium\nDependencies: Medium\nRisk: Medium`;
       expect(parseJiraPromptResponse(text)).not.toBeNull();

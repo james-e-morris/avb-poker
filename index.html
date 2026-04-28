@@ -318,11 +318,11 @@ Your job is to estimate a work item using the exact scoring model below so the r
 ESTIMATE THE WORK ITEM AGAINST THESE 6 FACTORS:
 
 SIZE (base implementation effort):
-1 = Tiny/cosmetic/single small change
-2 = Small/localized enhancement or fix
-3 = Standard/contained feature within one area
-5 = Multi-step change across multiple areas
-8 = Large/cross-cutting change with broad surface area
+1 = Tiny change with very small implementation footprint (for example one-file tweak, one config line, or patch package bump with minimal compatibility edits)
+2 = Small/localized enhancement or fix with limited footprint in one area
+3 = Standard contained feature touching several files in one domain/flow
+5 = Multi-step change across multiple areas/services with coordinated updates
+8 = Broad cross-cutting change with large footprint across many modules/systems
 
 COMPLEXITY (technical challenge):
 Low = Straightforward implementation using known patterns
@@ -349,16 +349,29 @@ Low = Easy rollback, isolated behavior, limited blast radius
 Medium = User-facing or workflow impact requiring careful testing
 High = Critical workflow, data correctness, auth/session, or system stability impact
 
+SIZE ANCHOR RULES (CRITICAL):
+1. Size is driven primarily by implementation footprint (how much of the codebase must be changed), not by business importance.
+2. Estimate Size from concrete touch surface first: number of files/modules/services requiring meaningful edits.
+3. Do not increase Size only because Complexity, Risk, or Uncertainty is high. Keep those signals in their own factors.
+4. If the ticket describes one localized change, default to Size 1-2 unless there is explicit evidence of broader code impact.
+5. Package update sizing must follow semver plus actual migration footprint:
+- Patch update: default Size 1; only move to Size 2 if explicit compatibility edits are needed across multiple call sites.
+- Minor update: usually Size 1-2; Size 3 only when the ticket explicitly requires coordinated updates in multiple modules/flows.
+- Major update: usually Size 2-3 when migration is contained; use Size 5 only when the change clearly spans multiple areas/services with broad refactors.
+6. A one-line package bump with small follow-up compatibility fixes should remain Size 1 unless clear evidence shows wider impact.
+
 ANALYSIS INSTRUCTIONS:
 1. Base your assessment only on the work item description, acceptance criteria, and any explicitly provided implementation context.
 2. Choose Size first as the scope anchor.
-3. Treat Low as the default for non-Size factors. Only use Medium or High when the work item contains concrete evidence.
-4. If the work item is underspecified, raise Uncertainty before inventing hidden complexity.
-5. Simple, isolated changes (copy, single-field config, cosmetic tweaks) are typically Size 1–2 with mostly Low factors.
-6. Changes spanning multiple areas, flows, or dependencies typically justify Size 3–5.
-7. Only use Size 8 when the change is clearly broad and cross-cutting.
-8. Avoid blanket Medium ratings. If there is no explicit signal, keep the factor Low.
-9. Do not estimate from intuition alone. Follow the scoring model exactly.
+3. Anchor Size to touched code surface first, then assess other factors independently.
+4. Treat Low as the default for non-Size factors. Only use Medium or High when the work item contains concrete evidence.
+5. If the work item is underspecified, raise Uncertainty before inventing hidden complexity.
+6. For package updates, explicitly consider whether it is patch, minor, or major and apply the semver sizing guidance above.
+7. Simple, isolated changes (copy, single-field config, cosmetic tweaks) are typically Size 1-2 with mostly Low factors.
+8. Changes spanning multiple areas, flows, or dependencies typically justify Size 3-5.
+9. Only use Size 8 when the change is clearly broad and cross-cutting.
+10. Avoid blanket Medium ratings. If there is no explicit signal, keep the factor Low.
+11. Do not estimate from intuition alone. Follow the scoring model exactly.
 
 CONFIDENCE CALIBRATION RULES:
 1. Confidence should reflect how complete and reliable the available evidence is, not simply whether the score is high.

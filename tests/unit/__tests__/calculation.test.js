@@ -91,5 +91,27 @@ describe('Story Point Calculation', () => {
       const fib = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
       expect(fib).toContain(result.sp);
     });
+
+    test('keeps current Examples sidebar scenario outputs stable', () => {
+      // Mirrors EXAMPLE_SCENARIOS in src/js/app.js to guard against accidental drift.
+      const scenarios = [
+        { id: 'baseline-min', params: [1, 1, 1, 1, 1, 1], expectedSp: 1 },
+        { id: 'package-patch-safe', params: [1, 1, 1, 1, 1, 1], expectedSp: 1 },
+        { id: 'package-minor-localized', params: [2, 1, 1, 1, 1, 1], expectedSp: 2 },
+        { id: 'contained-feature', params: [3, 1, 1, 1, 1, 1], expectedSp: 3 },
+        { id: 'contained-refactor-some-unknowns', params: [3, 2, 2, 2, 1, 1], expectedSp: 5 },
+        { id: 'multi-area-feature', params: [5, 2, 2, 2, 1, 1], expectedSp: 8 },
+        { id: 'package-major-broad', params: [8, 2, 2, 2, 2, 1], expectedSp: 13 },
+        { id: 'cross-system-migration', params: [8, 3, 3, 3, 3, 3], expectedSp: 21 },
+        { id: 'package-major-contained', params: [5, 2, 2, 2, 1, 2], expectedSp: 8 },
+      ];
+
+      scenarios.forEach(({ params, expectedSp }) => {
+        const result = calculateSP(...params);
+        expect(result.sp).toBe(expectedSp);
+        expect(result.sp).toBe(mapToFibonacci(result.rawScore));
+        expect(result.sp).toBeGreaterThan(0);
+      });
+    });
   });
 });

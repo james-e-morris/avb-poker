@@ -148,6 +148,60 @@ test.describe('Planning Poker - Basic Flow', () => {
 });
 
 test.describe('Planning Poker - Voting Flow', () => {
+  test('should start timer immediately for moderator and sync to participants', async ({ page, context }) => {
+    const parseClock = (clockText) => {
+      const [min, sec] = String(clockText)
+        .trim()
+        .split(':')
+        .map((part) => Number(part));
+      if (!Number.isFinite(min) || !Number.isFinite(sec)) return NaN;
+      return min * 60 + sec;
+    };
+
+    await page.goto('/');
+    await page.fill('#session-name-input', 'Timer Sync Test');
+    await page.fill('#create-name-input', 'Moderator');
+
+    const createPromise = page.waitForURL(/session=/);
+    await page.click('#btn-create');
+    await createPromise;
+
+    const sessionId = page.url().split('session=')[1];
+
+    // Story is required for the reveal flow when timer expires.
+    await page.click('#game-story-display', { force: true });
+    await page.fill('#story-input', 'Timer sync story');
+    await page.click('#btn-story-save');
+
+    const participant = await context.newPage();
+    await joinFromInviteLink(participant, sessionId, 'Participant');
+
+    // Story save auto-starts the timer.
+    await expect(page.locator('.story-timer')).toHaveClass(/is-running/, { timeout: 350 });
+    await expect(participant.locator('.story-timer')).toHaveClass(/is-running/, { timeout: 2500 });
+
+    // Reset then start should also reflect immediately for moderator.
+    await page.click('#btn-story-timer-action');
+    await expect(page.locator('.story-timer')).not.toHaveClass(/is-running/, { timeout: 350 });
+
+    await page.click('#btn-story-timer-action');
+    await expect(page.locator('.story-timer')).toHaveClass(/is-running/, { timeout: 350 });
+    await expect(participant.locator('.story-timer')).toHaveClass(/is-running/, { timeout: 2500 });
+
+    const moderatorStart = parseClock(await page.locator('#story-timer-value').innerText());
+    const participantStart = parseClock(await participant.locator('#story-timer-value').innerText());
+
+    await page.waitForTimeout(2100);
+
+    const moderatorAfter = parseClock(await page.locator('#story-timer-value').innerText());
+    const participantAfter = parseClock(await participant.locator('#story-timer-value').innerText());
+
+    expect(moderatorAfter).toBeLessThan(moderatorStart);
+    expect(participantAfter).toBeLessThan(participantStart);
+
+    await participant.close();
+  });
+
   test('should cast vote in game', async ({ page }) => {
     await page.goto('/');
 
@@ -229,6 +283,51 @@ test.describe('Planning Poker - Voting Flow', () => {
     await expect(resultsArea2).not.toHaveAttribute('hidden');
 
     await page2.close();
+  });
+
+  test('should auto-reveal on timer expiry in cross-tab mode', async ({ page, context }) => {
+    test.setTimeout(80000);
+
+    await page.goto('/');
+    await page.fill('#session-name-input', 'Timer Expiry Auto Reveal');
+    await page.fill('#create-name-input', 'Moderator');
+
+    const createPromise = page.waitForURL(/session=/);
+    await page.click('#btn-create');
+    await createPromise;
+
+    const sessionId = page.url().split('session=')[1];
+
+    await page.click('#game-story-display', { force: true });
+    await page.fill('#story-input', 'Auto reveal on expiry');
+    await page.click('#btn-story-save');
+
+    // Use shortest path to expiry to keep test quick and deterministic.
+    await page.click('#btn-story-timer-action'); // reset from auto-start
+    await expect(page.locator('.story-timer')).not.toHaveClass(/is-running/, { timeout: 1000 });
+
+    await page.click('#btn-timer-30');
+    await page.click('#btn-story-timer-action');
+    await expect(page.locator('.story-timer')).toHaveClass(/is-running/, { timeout: 1000 });
+
+    // Cast votes before expiry so reveal has data.
+    await page.click('.vote-card:has-text("8")');
+
+    const participant = await context.newPage();
+    await joinFromInviteLink(participant, sessionId, 'Participant');
+    await participant.click('.vote-card:has-text("5")');
+
+    await expect(participant.locator('.story-timer')).toHaveClass(/is-running/, { timeout: 2500 });
+
+    // Timer expiry should trigger auto reveal without clicking Reveal Votes.
+    await expect(page.locator('#results-area')).not.toHaveAttribute('hidden', { timeout: 40000 });
+    await expect(participant.locator('#results-area')).not.toHaveAttribute('hidden', { timeout: 40000 });
+
+    // Footer should move to revealed controls in both tabs.
+    await expect(page.locator('#footer-revealed')).not.toHaveAttribute('hidden');
+    await expect(participant.locator('#footer-revealed')).not.toHaveAttribute('hidden');
+
+    await participant.close();
   });
 
   test('should calculate average correctly', async ({ page }) => {

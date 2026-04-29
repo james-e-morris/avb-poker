@@ -900,6 +900,14 @@ async function publishSessionWithTimerMutation(mutateTimer) {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
 
+  // Apply timer changes locally so moderator UI reflects start/reset instantly,
+  // then publish canonical state to peers.
+  if (state.sessionData) {
+    const localTimer = ensureSessionTimer(state.sessionData);
+    mutateTimer(localTimer, state.sessionData);
+    renderStoryTimer(state.sessionData);
+  }
+
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
     if (!session) return;
@@ -1791,6 +1799,21 @@ async function setStory(name) {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
   const clean = safeText(name);
+
+  if (state.sessionData) {
+    const previousStory = safeText(state.sessionData.story);
+    const storyChanged = !!clean && clean !== previousStory;
+    state.sessionData.story = clean;
+
+    if (storyChanged) {
+      const timer = ensureSessionTimer(state.sessionData);
+      timer.remainingSec = timer.durationSec;
+      timer.isRunning = true;
+      timer.endsAt = Date.now() + timer.durationSec * 1000;
+    }
+
+    updateGameHeader(state.sessionData);
+  }
 
   if (state.dbMode === 'ably') {
     const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);

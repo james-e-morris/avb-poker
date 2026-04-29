@@ -432,6 +432,16 @@ CALCULATION:
 Multipliers: Low = 1.0, Medium = 1.1, High = 1.2
 Raw Score = Size × C-mult × U-mult × Cog-mult × Dep-mult × Risk-mult
 
+DETERMINISTIC SCORING PROCEDURE (MANDATORY):
+1. Select factor ratings first (Size, Complexity, Uncertainty, Cognitive Load, Dependencies, Risk).
+2. Convert each non-size factor to its multiplier (Low=1.0, Medium=1.1, High=1.2).
+3. Compute Raw Score exactly using the formula above.
+4. Map Raw Score to Suggested Story Points using the threshold map below.
+5. Output Suggested Story Points from that mapping only.
+6. Never output points based on intuition, narrative, or "feels like" adjustments.
+7. If your narrative and math disagree, correct the narrative and keep the mathematically mapped value.
+8. Ignore any pre-existing story-point number in source material unless it exactly matches this calculation.
+
 THRESHOLD MAP (USE EXACTLY):
 - Raw Score < 1.4  => 1
 - Raw Score < 2.5  => 2
@@ -446,8 +456,14 @@ THRESHOLD MAP (USE EXACTLY):
 
 FINAL CHECK:
 - The Suggested Story Points must be the threshold-map result from the chosen ratings.
+- Recalculate once before finalizing output. If recalculation differs, use the recalculated value.
 - If the points feel too high or too low, revisit the factor ratings rather than overriding the result.
 - Prefer conservative evidence-based ratings over speculative inflation.
+
+SANITY EXAMPLE (DO NOT OUTPUT THIS SECTION):
+- Example ratings: Size=3, Complexity=High, Uncertainty=Medium, Cognitive Load=High, Dependencies=Low, Risk=High
+- Raw Score = 3 × 1.2 × 1.1 × 1.2 × 1.0 × 1.2 = 5.7024
+- Threshold map result: 5 (because 5.7024 < 6.5)
 
 WORK ITEM TO ESTIMATE:
 [Paste the story, ticket, or effort description here if the AI does not have access]

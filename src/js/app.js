@@ -2934,6 +2934,10 @@ function renderStoryTimer(session) {
 
   if (runtime.isExpired && !state.storyTimerWasExpired) {
     triggerTimerExpiredRipple(timerRoot);
+
+    // Auto-reveal once when the timer crosses into expired state.
+    // revealVotes already enforces moderator/session/status guards.
+    revealVotes();
   }
   state.storyTimerWasExpired = runtime.isExpired;
 

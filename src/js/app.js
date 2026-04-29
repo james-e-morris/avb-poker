@@ -883,35 +883,64 @@ function formatStoryTimerClock(totalSeconds) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/**
+ * Core session mutation helper.
+ *
+ * Retrieves the current session (from the optimistic in-memory cache in Ably
+ * mode, or localStorage in demo mode), invokes mutationFn(session) to apply
+ * changes, then persists and audits through the appropriate transport.
+ *
+ * The mutation function may return `false` to abort: no persist or audit
+ * will occur in that case.  Any other return value (including undefined) is
+ * treated as success.
+ *
+ * @param {function(session): boolean|undefined} mutationFn
+ * @returns {object|null} The mutated session object, or null if aborted.
+ */
+async function mutateSyncSession(mutationFn) {
+  const { sessionId } = state;
+  if (!sessionId) return null;
+
+  let session;
+  if (state.dbMode === 'ably') {
+    session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
+  } else {
+    session = getDemoSession(sessionId);
+  }
+  if (!session) return null;
+
+  if (mutationFn(session) === false) return null;
+
+  if (state.dbMode === 'ably') {
+    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
+    await ablyPublishState(channel, session);
+    ablyPublishAdminAudit(session);
+  } else {
+    saveDemoSession(sessionId, session);
+    captureAdminSessionAudit(session);
+  }
+  return session;
+}
+
 async function publishSessionWithTimerMutation(mutateTimer) {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
 
   // Apply timer changes locally so moderator UI reflects start/reset instantly,
-  // then publish canonical state to peers.
+  // then publish canonical state to peers via mutateSyncSession.
   if (state.sessionData) {
     const localTimer = ensureSessionTimer(state.sessionData);
     mutateTimer(localTimer, state.sessionData);
     renderStoryTimer(state.sessionData);
   }
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (!session) return;
+  // For Ably mode, mutateSyncSession deepClones state.sessionData which already
+  // has the optimistic timer changes applied, so mutateTimer is effectively a
+  // no-op on the already-set fields.  For demo mode it re-applies to localStorage.
+  await mutateSyncSession((session) => {
     const timer = ensureSessionTimer(session);
     mutateTimer(timer, session);
-    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-    await ablyPublishState(channel, session);
-    ablyPublishAdminAudit(session);
-    return;
-  }
-
-  const session = getDemoSession(sessionId);
-  if (!session) return;
-  const timer = ensureSessionTimer(session);
-  mutateTimer(timer, session);
-  saveDemoSession(sessionId, session);
-  captureAdminSessionAudit(session);
+  });
 }
 
 async function setTimerDuration(seconds) {
@@ -1626,35 +1655,16 @@ async function castVote(value) {
   state.questionVotePanicStartedAt = value === '?' ? Date.now() : 0;
   state.coffeeVotePourStartedAt = value === '☕' ? Date.now() : 0;
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (!session || !session.participants || !session.participants[userId]) return;
+  await mutateSyncSession((session) => {
+    if (!session.participants || !session.participants[userId]) return false;
     if (session.status === 'revealed') {
       showToast('Voting is locked after reveal. Ask the moderator to return to voting.', 'info');
-      return;
+      return false;
     }
-
     session.participants[userId].vote = value;
     session.participants[userId].hasVoted = true;
     session.participants[userId].rankings = deepClone(state.calcSelections);
-
-    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-    await ablyPublishState(channel, session);
-    ablyPublishAdminAudit(session);
-  } else {
-    const session = getDemoSession(sessionId);
-    if (session && session.participants && session.participants[userId]) {
-      if (session.status === 'revealed') {
-        showToast('Voting is locked after reveal. Ask the moderator to return to voting.', 'info');
-        return;
-      }
-      session.participants[userId].vote = value;
-      session.participants[userId].hasVoted = true;
-      session.participants[userId].rankings = deepClone(state.calcSelections);
-      saveDemoSession(sessionId, session);
-      captureAdminSessionAudit(session);
-    }
-  }
+  });
 
   renderVoteCards(value);
 }
@@ -1663,74 +1673,34 @@ async function revealVotes() {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (!session) return;
-    if (session.status === 'revealed') return;
+  await mutateSyncSession((session) => {
+    if (session.status === 'revealed') return false;
     session.finalDecision = getConsensusFinalDecision(session.participants || {});
     appendRevealHistoryEntry(session);
     session.status = 'revealed';
-    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-    await ablyPublishState(channel, session);
-    ablyPublishAdminAudit(session);
-  } else {
-    const session = getDemoSession(sessionId);
-    if (session) {
-      if (session.status === 'revealed') return;
-      session.finalDecision = getConsensusFinalDecision(session.participants || {});
-      appendRevealHistoryEntry(session);
-      session.status = 'revealed';
-      saveDemoSession(sessionId, session);
-      captureAdminSessionAudit(session);
-    }
-  }
+  });
 }
 
 async function setFinalDecision(value) {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (!session || session.status !== 'revealed') return;
+  await mutateSyncSession((session) => {
+    if (session.status !== 'revealed') return false;
     session.finalDecision = value || null;
     applyFinalDecisionToHistory(session, value || null);
-    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-    await ablyPublishState(channel, session);
-    ablyPublishAdminAudit(session);
-  } else {
-    const session = getDemoSession(sessionId);
-    if (!session || session.status !== 'revealed') return;
-    session.finalDecision = value || null;
-    applyFinalDecisionToHistory(session, value || null);
-    saveDemoSession(sessionId, session);
-    captureAdminSessionAudit(session);
-  }
+  });
 }
 
 async function returnToVoting() {
   const { sessionId } = state;
   if (!sessionId || !state.isModerator) return;
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (!session || session.status !== 'revealed') return;
-
+  await mutateSyncSession((session) => {
+    if (session.status !== 'revealed') return false;
     session.status = 'voting';
     removeCurrentRevealHistoryEntry(session);
-
-    const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-    await ablyPublishState(channel, session);
-    ablyPublishAdminAudit(session);
-  } else {
-    const session = getDemoSession(sessionId);
-    if (!session || session.status !== 'revealed') return;
-
-    session.status = 'voting';
-    removeCurrentRevealHistoryEntry(session);
-    saveDemoSession(sessionId, session);
-    captureAdminSessionAudit(session);
-  }
+  });
 
   state.suggestedFinalDecision = null;
 }
@@ -1740,57 +1710,30 @@ async function nextStory(storyName) {
   if (!sessionId || !state.isModerator) return;
   const cleanStoryName = safeText(storyName);
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (session) {
-      if (!canStartNextStory(session)) {
-        showToast('Choose a Final Decision before starting the next story', 'error');
-        return;
-      }
-      session.status = 'voting';
-      session.story = cleanStoryName;
-      session.finalDecision = null;
-      session.currentRevealId = null;
-      const timer = ensureSessionTimer(session);
-      timer.remainingSec = timer.durationSec;
-      timer.isRunning = true;
-      timer.endsAt = Date.now() + timer.durationSec * 1000;
-      Object.keys(session.participants || {}).forEach((uid) => {
-        session.participants[uid].vote = null;
-        session.participants[uid].hasVoted = false;
-      });
-      const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-      await ablyPublishState(channel, session);
-      ablyPublishAdminAudit(session);
-      clearJiraPasteInput();
+  const mutated = await mutateSyncSession((session) => {
+    if (!canStartNextStory(session)) {
+      showToast('Choose a Final Decision before starting the next story', 'error');
+      return false;
     }
-  } else {
-    const session = getDemoSession(sessionId);
-    if (session) {
-      if (!canStartNextStory(session)) {
-        showToast('Choose a Final Decision before starting the next story', 'error');
-        return;
-      }
-      session.status = 'voting';
-      session.story = cleanStoryName;
-      session.finalDecision = null;
-      session.currentRevealId = null;
-      const timer = ensureSessionTimer(session);
-      timer.remainingSec = timer.durationSec;
-      timer.isRunning = true;
-      timer.endsAt = Date.now() + timer.durationSec * 1000;
-      Object.keys(session.participants || {}).forEach((uid) => {
-        session.participants[uid].vote = null;
-        session.participants[uid].hasVoted = false;
-      });
-      saveDemoSession(sessionId, session);
-      captureAdminSessionAudit(session);
-      clearJiraPasteInput();
-    }
-  }
+    session.status = 'voting';
+    session.story = cleanStoryName;
+    session.finalDecision = null;
+    session.currentRevealId = null;
+    const timer = ensureSessionTimer(session);
+    timer.remainingSec = timer.durationSec;
+    timer.isRunning = true;
+    timer.endsAt = Date.now() + timer.durationSec * 1000;
+    Object.keys(session.participants || {}).forEach((uid) => {
+      session.participants[uid].vote = null;
+      session.participants[uid].hasVoted = false;
+    });
+  });
 
-  state.currentVote = null;
-  state.suggestedFinalDecision = null;
+  if (mutated) {
+    state.currentVote = null;
+    state.suggestedFinalDecision = null;
+    clearJiraPasteInput();
+  }
 }
 
 async function setStory(name) {
@@ -1798,6 +1741,8 @@ async function setStory(name) {
   if (!sessionId || !state.isModerator) return;
   const clean = safeText(name);
 
+  // Optimistic local update: immediately reflect the new story name and auto-start
+  // the timer in the moderator UI before the network round-trip completes.
   if (state.sessionData) {
     const previousStory = safeText(state.sessionData.story);
     const storyChanged = !!clean && clean !== previousStory;
@@ -1813,42 +1758,23 @@ async function setStory(name) {
     updateGameHeader(state.sessionData);
   }
 
-  if (state.dbMode === 'ably') {
-    const session = state.sessionData ? deepClone(state.sessionData) : await getLatestAblySession(sessionId);
-    if (session) {
-      const previousStory = safeText(session.story);
-      const storyChanged = !!clean && clean !== previousStory;
-      session.story = clean;
+  // For Ably mode, mutateSyncSession deepClones state.sessionData which already
+  // has the optimistic changes applied — the mutation below is a no-op for Ably
+  // because story/timer were already set above.
+  // For demo mode, getDemoSession reads from localStorage (pre-optimistic), so
+  // the mutation must redo the same changes on that copy.
+  await mutateSyncSession((session) => {
+    const previousStory = safeText(session.story);
+    const storyChanged = !!clean && clean !== previousStory;
+    session.story = clean;
 
-      if (storyChanged) {
-        const timer = ensureSessionTimer(session);
-        timer.remainingSec = timer.durationSec;
-        timer.isRunning = true;
-        timer.endsAt = Date.now() + timer.durationSec * 1000;
-      }
-
-      const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
-      await ablyPublishState(channel, session);
-      ablyPublishAdminAudit(session);
+    if (storyChanged) {
+      const timer = ensureSessionTimer(session);
+      timer.remainingSec = timer.durationSec;
+      timer.isRunning = true;
+      timer.endsAt = Date.now() + timer.durationSec * 1000;
     }
-  } else {
-    const session = getDemoSession(sessionId);
-    if (session) {
-      const previousStory = safeText(session.story);
-      const storyChanged = !!clean && clean !== previousStory;
-      session.story = clean;
-
-      if (storyChanged) {
-        const timer = ensureSessionTimer(session);
-        timer.remainingSec = timer.durationSec;
-        timer.isRunning = true;
-        timer.endsAt = Date.now() + timer.durationSec * 1000;
-      }
-
-      saveDemoSession(sessionId, session);
-      captureAdminSessionAudit(session);
-    }
-  }
+  });
 }
 
 // ---- Real-time Subscription --------------------------------

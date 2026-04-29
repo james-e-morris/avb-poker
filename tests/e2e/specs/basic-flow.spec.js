@@ -412,6 +412,69 @@ test.describe('Planning Poker - Voting Flow', () => {
     await participant.close();
   });
 
+  test('should return to voting, clear all votes, and restore voting state across tabs', async ({ page, context }) => {
+    // Create session
+    await page.goto('/');
+    await page.fill('#session-name-input', 'Return To Voting Test');
+    await page.fill('#create-name-input', 'Moderator');
+
+    const createPromise = page.waitForURL(/session=/);
+    await page.click('#btn-create');
+    await createPromise;
+
+    const sessionId = page.url().split('session=')[1];
+
+    // Set a story name (required to reveal)
+    await page.click('#game-story-display', { force: true });
+    await page.fill('#story-input', 'Story for return-to-voting test');
+    await page.click('#btn-story-save');
+
+    // Join a second participant with a distinct identity
+    const participant = await context.newPage();
+    const participantUid = `u_rtv_participant_${Date.now()}`;
+    await participant.goto('/');
+    await participant.evaluate(
+      ({ uid }) => {
+        localStorage.setItem('pp_uid', uid);
+        localStorage.setItem('pp_username', 'Participant');
+      },
+      { uid: participantUid }
+    );
+
+    await joinFromInviteLink(participant, sessionId, 'Participant');
+
+    // Both cast votes
+    await page.click('.vote-card:has-text("8")');
+    await participant.click('.vote-card:has-text("5")');
+
+    // Moderator reveals
+    await page.click('#btn-reveal');
+    await expect(page.locator('#results-area')).not.toHaveAttribute('hidden', { timeout: 5000 });
+    await expect(participant.locator('#results-area')).not.toHaveAttribute('hidden', { timeout: 5000 });
+
+    // Moderator returns to voting
+    await page.click('#btn-return-voting');
+
+    // Results should be hidden again on both tabs
+    await expect(page.locator('#results-area')).toHaveAttribute('hidden', '', { timeout: 5000 });
+    await expect(participant.locator('#results-area')).toHaveAttribute('hidden', '', { timeout: 5000 });
+
+    // Voting footer should be active again
+    await expect(page.locator('#footer-voting')).not.toHaveAttribute('hidden', { timeout: 3000 });
+    await expect(participant.locator('#footer-voting')).not.toHaveAttribute('hidden', { timeout: 3000 });
+
+    // Votes are PRESERVED when returning to voting (participants can re-vote or change votes).
+    // Unlike nextStory, returnToVoting does not reset participant vote state.
+    await expect(page.locator('#vote-count-label')).toContainText('2 of 2 voted');
+    await expect(participant.locator('#vote-count-label')).toContainText('2 of 2 voted');
+
+    // Cards should be re-enabled so participants can change their votes
+    const modCard = page.locator('.vote-card[data-value="3"]');
+    await expect(modCard).not.toBeDisabled();
+
+    await participant.close();
+  });
+
   test('should calculate average correctly', async ({ page }) => {
     await page.goto('/');
 

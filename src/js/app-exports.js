@@ -25,6 +25,19 @@ const {
 
 const { getRevealDisabledReason, getNextStoryDisabledReason } = require('./utils-validation.js');
 
+const {
+  TIMER_DURATION_OPTIONS,
+  TIMER_DEFAULT_SECONDS,
+  clampTimerValue,
+  normalizeTimerDuration,
+  ensureSessionTimer,
+  getTimerRemainingSeconds,
+  hasFinalDecision,
+  canStartNextStory,
+  summarizeVotes,
+  getConsensusFinalDecision,
+} = require('./utils-session.js');
+
 function getParticipantRankingSummary(participant) {
   const rankingSources = [
     participant?.rankings,
@@ -60,19 +73,8 @@ function getParticipantRankingSummary(participant) {
 }
 
 function summarizeVotesForAudit(participants) {
-  const entries = Object.entries(participants || {}).sort(([, a], [, b]) => (a.joinedAt || 0) - (b.joinedAt || 0));
-  const numericVotes = entries.map(([, p]) => parseFloat(p.vote)).filter((v) => !isNaN(v));
-  const avg = numericVotes.length ? numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length : null;
-  const distinctNumericVotes = numericVotes.length ? new Set(numericVotes).size : 0;
-  const isConsensus = numericVotes.length > 0 && distinctNumericVotes === 1;
-
-  return {
-    entries,
-    avg,
-    isConsensus,
-    distinctNumericVotes,
-    nearest: avg !== null ? nearestFib(avg) : null,
-  };
+  // Thin alias kept for internal use; the canonical implementation lives in utils-session.js.
+  return summarizeVotes(participants);
 }
 
 function getCurrentRevealTimestamp(session) {
@@ -318,27 +320,56 @@ function toggleJiraPromptSidebar() {
 
 // Exports for testing (Node/Jest only)
 module.exports = {
+  // Calculation utils
   FIBONACCI_CARDS,
   mapToFibonacci,
   scoreToMultiplier,
+  calculateSP,
+  nearestFib,
+
+  // String / formatting utils
   formatCalcNumber,
   voteColorClass,
-  nearestFib,
   deepClone,
   getAblyErrorCode,
   getAblyChannelName,
   safeText,
   formatAdminStatus,
+
+  // Validation utils
   getRevealDisabledReason,
   getNextStoryDisabledReason,
+
+  // Timer utils (canonical implementations in utils-session.js)
+  TIMER_DURATION_OPTIONS,
+  TIMER_DEFAULT_SECONDS,
+  clampTimerValue,
+  normalizeTimerDuration,
+  ensureSessionTimer,
+  getTimerRemainingSeconds,
+
+  // Session state helpers (canonical implementations in utils-session.js)
+  hasFinalDecision,
+  canStartNextStory,
+  summarizeVotes,
+  getConsensusFinalDecision,
+
+  // Audit / clipboard
   buildAuditClipboardText,
-  calculateSP,
+
+  // Session ID / expiry
   generateSessionId,
   isRoomExpired,
+
+  // Jira AI prompt
   parseJiraPromptResponse,
   setJiraPromptSidebarExpanded,
   toggleJiraPromptSidebar,
+
+  // Ranking display
   getParticipantRankingSummary,
+
+  // Audit helpers
   summarizeVotesForAudit,
   getCurrentRevealTimestamp,
   formatAuditTimestampEst,

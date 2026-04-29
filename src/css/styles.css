@@ -997,45 +997,78 @@ body.timer-reverse-ripple-active::before {
   font-weight: 800;
   color: var(--text);
 }
-.p-card-back.vote-high {
+
+.p-card-back[class*='vote-point-'] {
+  background: hsl(var(--vote-hue, 220) 95% 96%);
+  border-color: hsl(var(--vote-hue, 220) 72% 76%);
+  color: hsl(var(--vote-hue, 220) 62% 30%);
+}
+
+.p-card-back.vote-point-0 {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.p-card-back.vote-point-1 {
+  --vote-hue: 205;
+}
+.p-card-back.vote-point-2 {
+  --vote-hue: 185;
+}
+.p-card-back.vote-point-3 {
+  --vote-hue: 165;
+}
+.p-card-back.vote-point-4 {
+  --vote-hue: 145;
+}
+.p-card-back.vote-point-5 {
+  --vote-hue: 125;
+}
+.p-card-back.vote-point-6 {
+  --vote-hue: 105;
+}
+.p-card-back.vote-point-7 {
+  --vote-hue: 85;
+}
+.p-card-back.vote-point-8 {
+  --vote-hue: 62;
+}
+.p-card-back.vote-point-9 {
+  --vote-hue: 42;
+}
+.p-card-back.vote-point-10 {
+  --vote-hue: 24;
+}
+.p-card-back.vote-point-11 {
+  --vote-hue: 300;
+}
+.p-card-back.vote-point-12 {
+  --vote-hue: 270;
+}
+
+.p-card-back.vote-point-13-plus {
   background: #fef2f2;
   border-color: #fca5a5;
   color: #dc2626;
 }
-.p-card-back.vote-med {
-  background: #fffbeb;
-  border-color: #fcd34d;
-  color: #d97706;
+
+[data-theme='dark'] .p-card-back[class*='vote-point-'] {
+  background: hsl(var(--vote-hue, 220) 60% 16%);
+  border-color: hsl(var(--vote-hue, 220) 55% 34%);
+  color: hsl(var(--vote-hue, 220) 80% 78%);
 }
-.p-card-back.vote-low {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #1d4ed8;
+
+[data-theme='dark'] .p-card-back.vote-point-0 {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
 }
-.p-card-back.vote-ok {
-  background: #f0fdf4;
-  border-color: #86efac;
-  color: #16a34a;
-}
-[data-theme='dark'] .p-card-back.vote-high {
+
+[data-theme='dark'] .p-card-back.vote-point-13-plus {
   background: #450a0a;
   border-color: #991b1b;
   color: #fca5a5;
-}
-[data-theme='dark'] .p-card-back.vote-med {
-  background: #451a03;
-  border-color: #92400e;
-  color: #fcd34d;
-}
-[data-theme='dark'] .p-card-back.vote-low {
-  background: #172554;
-  border-color: #1e40af;
-  color: #93c5fd;
-}
-[data-theme='dark'] .p-card-back.vote-ok {
-  background: #052e16;
-  border-color: #166534;
-  color: #86efac;
 }
 
 /* voted indicator on card front */

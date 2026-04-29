@@ -165,12 +165,11 @@ function formatCalcNumber(value) {
 }
 
 function voteColorClass(vote) {
-  const v = parseFloat(vote);
-  if (isNaN(v)) return '';
-  if (v <= 3) return 'vote-low';
-  if (v <= 8) return 'vote-ok';
-  if (v <= 21) return 'vote-med';
-  return 'vote-high';
+  const v = Number(vote);
+  if (!Number.isFinite(v)) return '';
+  if (v >= 13) return 'vote-point-13-plus';
+  if (v <= 0) return 'vote-point-0';
+  return `vote-point-${Math.floor(v)}`;
 }
 
 function nearestFib(avg) {

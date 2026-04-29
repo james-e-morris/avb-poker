@@ -108,30 +108,32 @@ describe('Utility Functions', () => {
       expect(voteColorClass('☕')).toBe('');
     });
 
-    test('returns vote-low for 0-3', () => {
-      expect(voteColorClass('0')).toBe('vote-low');
-      expect(voteColorClass('1')).toBe('vote-low');
-      expect(voteColorClass('3')).toBe('vote-low');
+    test('returns dedicated classes for low values', () => {
+      expect(voteColorClass('0')).toBe('vote-point-0');
+      expect(voteColorClass('1')).toBe('vote-point-1');
+      expect(voteColorClass('3')).toBe('vote-point-3');
     });
 
-    test('returns vote-ok for 4-8', () => {
-      expect(voteColorClass('5')).toBe('vote-ok');
-      expect(voteColorClass('8')).toBe('vote-ok');
+    test('returns dedicated classes for single-digit points', () => {
+      expect(voteColorClass('5')).toBe('vote-point-5');
+      expect(voteColorClass('8')).toBe('vote-point-8');
     });
 
-    test('returns vote-med for 9-21', () => {
-      expect(voteColorClass('13')).toBe('vote-med');
-      expect(voteColorClass('21')).toBe('vote-med');
+    test('returns dedicated classes for 10-12', () => {
+      expect(voteColorClass('10')).toBe('vote-point-10');
+      expect(voteColorClass('12')).toBe('vote-point-12');
     });
 
-    test('returns vote-high for 22+', () => {
-      expect(voteColorClass('34')).toBe('vote-high');
-      expect(voteColorClass('89')).toBe('vote-high');
+    test('returns red bucket class for 13 and higher', () => {
+      expect(voteColorClass('13')).toBe('vote-point-13-plus');
+      expect(voteColorClass('21')).toBe('vote-point-13-plus');
+      expect(voteColorClass('34')).toBe('vote-point-13-plus');
+      expect(voteColorClass('89')).toBe('vote-point-13-plus');
     });
 
     test('handles numeric inputs', () => {
-      expect(voteColorClass(5)).toBe('vote-ok');
-      expect(voteColorClass(3)).toBe('vote-low');
+      expect(voteColorClass(5)).toBe('vote-point-5');
+      expect(voteColorClass(3)).toBe('vote-point-3');
     });
   });
 

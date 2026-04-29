@@ -285,6 +285,88 @@ test.describe('Planning Poker - Voting Flow', () => {
     await page2.close();
   });
 
+  test('should preserve existing vote state when same user rejoins session', async ({ page, context }) => {
+    await page.goto('/');
+    await page.fill('#session-name-input', 'Rejoin State Test');
+    await page.fill('#create-name-input', 'Moderator');
+
+    const createPromise = page.waitForURL(/session=/);
+    await page.click('#btn-create');
+    await createPromise;
+
+    const sessionId = page.url().split('session=')[1];
+
+    await page.click('.vote-card:has-text("5")');
+    await expect(page.locator('#vote-count-label')).toContainText('1 of 1 voted');
+
+    // Same browser context keeps pp_uid; rejoin should not wipe existing vote.
+    const rejoinTab = await context.newPage();
+    await rejoinTab.goto(`/?session=${sessionId}`);
+    await expect(rejoinTab.locator('#view-game')).toHaveClass(/active/, { timeout: 5000 });
+
+    await expect(page.locator('#vote-count-label')).toContainText('1 of 1 voted');
+    await expect(rejoinTab.locator('#vote-count-label')).toContainText('1 of 1 voted');
+
+    await rejoinTab.close();
+  });
+
+  test('should sync final pick and next story transition across tabs', async ({ page, context }) => {
+    await page.goto('/');
+    await page.fill('#session-name-input', 'Final Pick Sync Test');
+    await page.fill('#create-name-input', 'Moderator');
+
+    const createPromise = page.waitForURL(/session=/);
+    await page.click('#btn-create');
+    await createPromise;
+
+    const sessionId = page.url().split('session=')[1];
+
+    await page.click('#game-story-display', { force: true });
+    await page.fill('#story-input', 'Story A');
+    await page.click('#btn-story-save');
+
+    await page.click('.vote-card:has-text("8")');
+
+    const participant = await context.newPage();
+    const participantUid = `u_participant_${Date.now()}`;
+    await participant.goto('/');
+    await participant.evaluate(
+      ({ uid }) => {
+        localStorage.setItem('pp_uid', uid);
+        localStorage.setItem('pp_username', 'Participant');
+      },
+      { uid: participantUid }
+    );
+
+    await joinFromInviteLink(participant, sessionId, 'Participant');
+    await participant.click('.vote-card:has-text("5")');
+
+    await page.click('#btn-reveal');
+
+    await expect(page.locator('#results-area')).not.toHaveAttribute('hidden', { timeout: 5000 });
+    await expect(participant.locator('#results-area')).not.toHaveAttribute('hidden', { timeout: 5000 });
+
+    await page.click('#results-final-picker .decision-chip:has-text("8")');
+
+    await expect(page.locator('#results-final-value')).toContainText('8 SP');
+    await expect(participant.locator('#results-final-value')).toContainText('8 SP');
+
+    await page.click('#btn-next-story');
+    await expect(page.locator('#modal-next-story')).not.toHaveAttribute('hidden', { timeout: 3000 });
+    await page.fill('#next-story-input', 'Story B');
+    await page.click('#btn-next-story-start');
+
+    await expect(page.locator('#results-area')).toHaveAttribute('hidden', '', { timeout: 5000 });
+    await expect(participant.locator('#results-area')).toHaveAttribute('hidden', '', { timeout: 5000 });
+
+    await expect(page.locator('#game-story-display')).toHaveText('Story B');
+    await expect(participant.locator('#game-story-display')).toHaveText('Story B');
+    await expect(page.locator('#vote-count-label')).toContainText('0 of 2 voted');
+    await expect(participant.locator('#vote-count-label')).toContainText('0 of 2 voted');
+
+    await participant.close();
+  });
+
   test('should auto-reveal on timer expiry in cross-tab mode', async ({ page, context }) => {
     test.setTimeout(80000);
 

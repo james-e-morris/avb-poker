@@ -1583,6 +1583,17 @@ async function joinSession(sessionId, userName) {
   const userId = getUserId();
   const cleanName = safeText(userName);
 
+  const mergeParticipantOnJoin = (existingParticipant) => {
+    const existing = existingParticipant && typeof existingParticipant === 'object' ? existingParticipant : {};
+    return {
+      ...existing,
+      name: cleanName || existing.name || 'Anonymous',
+      joinedAt: existing.joinedAt || Date.now(),
+      hasVoted: !!existing.hasVoted,
+      vote: existing.hasVoted ? (existing.vote ?? null) : null,
+    };
+  };
+
   if (state.dbMode === 'ably') {
     const latest = await getLatestAblySession(sessionId);
     if (!latest) throw new Error('Session not found.');
@@ -1590,7 +1601,7 @@ async function joinSession(sessionId, userName) {
 
     const updated = deepClone(latest);
     updated.participants = updated.participants || {};
-    updated.participants[userId] = { name: cleanName, vote: null, hasVoted: false, joinedAt: Date.now() };
+    updated.participants[userId] = mergeParticipantOnJoin(updated.participants[userId]);
 
     const channel = ablyRealtime.channels.get(getAblyChannelName(sessionId));
     await ablyPublishState(channel, updated);
@@ -1604,7 +1615,7 @@ async function joinSession(sessionId, userName) {
     if (!session) throw new Error('Session not found.');
 
     session.participants = session.participants || {};
-    session.participants[userId] = { name: cleanName, vote: null, hasVoted: false, joinedAt: Date.now() };
+    session.participants[userId] = mergeParticipantOnJoin(session.participants[userId]);
     saveDemoSession(sessionId, session);
 
     state.sessionId = sessionId;

@@ -22,6 +22,14 @@ Fast planning poker for sprint refinement and story estimation
 - Moderator final decision before moving on
 - Built-in calculator + AI prompt helper
 
+## High-Level Features
+
+- Real-time multi-user sync for voting, reveal, timer, and story progression
+- Moderator controls for reveal, final pick, return to voting, and next story
+- Timer-assisted estimation with automatic reveal on expiry
+- AI-assisted estimator prompt with structured paste-to-apply support
+- Session history and audit-friendly outcome summaries
+
 ## Session Flow
 
 1. Moderator sets Story name

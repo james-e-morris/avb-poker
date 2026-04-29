@@ -36,6 +36,8 @@ const state = {
   storyTimerPowerupTimeout: null,
   storyTimerRippleTimeout: null,
   storyTimerReverseRippleTimeout: null,
+  storyTimerSelectedSec: null,
+  timerClockOffsetMs: 0,
 };
 
 const CALC_METRIC_KEYS = ['size', 'complexity', 'uncertainty', 'cognitive', 'deps', 'risk'];
@@ -838,7 +840,8 @@ function getTimerRemainingSeconds(timer, nowMs = Date.now()) {
   if (!timer) return TIMER_DEFAULT_SECONDS;
 
   if (timer.isRunning && timer.endsAt) {
-    const remainingMs = Number(timer.endsAt) - nowMs;
+    const adjustedNowMs = state.dbMode === 'ably' ? nowMs - Number(state.timerClockOffsetMs || 0) : nowMs;
+    const remainingMs = Number(timer.endsAt) - adjustedNowMs;
     if (remainingMs <= 0) return 0;
     return clampTimerValue(Math.ceil(remainingMs / 1000), timer.durationSec);
   }
@@ -848,6 +851,7 @@ function getTimerRemainingSeconds(timer, nowMs = Date.now()) {
 
 function getStoryTimerRuntime(session) {
   const timer = ensureSessionTimer(session);
+  syncTimerClockOffset(timer);
   const remainingSec = getTimerRemainingSeconds(timer);
   const isRunning = !!timer.isRunning && remainingSec > 0;
   return {
@@ -857,6 +861,32 @@ function getStoryTimerRuntime(session) {
     isWarning: isRunning && remainingSec <= TIMER_WARNING_SECONDS,
     isExpired: remainingSec === 0,
   };
+}
+
+function syncTimerClockOffset(timer) {
+  if (state.dbMode !== 'ably') return;
+  if (!timer || !timer.isRunning || !timer.endsAt) return;
+
+  const durationSec = normalizeTimerDuration(timer.durationSec);
+  const fallbackRemaining = clampTimerValue(timer.remainingSec, durationSec) || durationSec;
+  const remainingSec = Number.isFinite(Number(timer.remainingSec))
+    ? clampTimerValue(timer.remainingSec, fallbackRemaining)
+    : fallbackRemaining;
+
+  const publisherNowMs = Number(timer.endsAt) - remainingSec * 1000;
+  if (!Number.isFinite(publisherNowMs)) return;
+
+  // Keep offset bounded to avoid extreme values from malformed payloads.
+  const rawOffset = Date.now() - publisherNowMs;
+  const boundedOffset = Math.max(-10 * 60 * 1000, Math.min(10 * 60 * 1000, rawOffset));
+
+  // Smooth minor transport jitter while still converging quickly.
+  if (!Number.isFinite(state.timerClockOffsetMs)) {
+    state.timerClockOffsetMs = boundedOffset;
+    return;
+  }
+
+  state.timerClockOffsetMs = Math.round(state.timerClockOffsetMs * 0.75 + boundedOffset * 0.25);
 }
 
 function formatStoryTimerClock(totalSeconds) {
@@ -892,6 +922,17 @@ async function publishSessionWithTimerMutation(mutateTimer) {
 async function setTimerDuration(seconds) {
   if (!state.isModerator) return;
   const durationSec = normalizeTimerDuration(seconds);
+  state.storyTimerSelectedSec = durationSec;
+
+  // Apply immediately for the local moderator so Start uses the selected value even before network sync.
+  if (state.sessionData) {
+    const localTimer = ensureSessionTimer(state.sessionData);
+    localTimer.durationSec = durationSec;
+    localTimer.remainingSec = durationSec;
+    localTimer.isRunning = false;
+    localTimer.endsAt = null;
+    renderStoryTimer(state.sessionData);
+  }
 
   await publishSessionWithTimerMutation((timer) => {
     timer.durationSec = durationSec;
@@ -905,12 +946,11 @@ async function startStoryTimer() {
   if (!state.isModerator) return;
 
   await publishSessionWithTimerMutation((timer) => {
-    const fallback = normalizeTimerDuration(timer.durationSec);
-    const remainingSec = clampTimerValue(timer.remainingSec, fallback) || fallback;
-    timer.durationSec = fallback;
-    timer.remainingSec = remainingSec;
+    const selectedDuration = normalizeTimerDuration(state.storyTimerSelectedSec || timer.durationSec);
+    timer.durationSec = selectedDuration;
+    timer.remainingSec = selectedDuration;
     timer.isRunning = true;
-    timer.endsAt = Date.now() + remainingSec * 1000;
+    timer.endsAt = Date.now() + selectedDuration * 1000;
   });
 }
 
@@ -2872,6 +2912,7 @@ function renderStoryTimer(session) {
   if (!timerRoot || !timerValueEl || !actionEl) return;
 
   const runtime = getStoryTimerRuntime(session);
+  state.storyTimerSelectedSec = runtime.timer.durationSec;
   const clockText = formatStoryTimerClock(runtime.remainingSec);
   timerValueEl.textContent = clockText;
   timerValueEl.setAttribute('aria-label', `Time remaining ${clockText}`);
@@ -3412,6 +3453,7 @@ function leaveGame() {
   state.wasRevealed = false;
   state.storyTimerWasRunning = false;
   state.storyTimerWasExpired = false;
+  state.timerClockOffsetMs = 0;
   clearTimerBurstEffects();
   renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);
@@ -3562,7 +3604,9 @@ function setupEventListeners() {
   document.querySelectorAll('.story-timer-option').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (!state.isModerator) return;
-      setTimerDuration(Number(btn.dataset.seconds));
+      const selectedSec = Number(btn.dataset.seconds);
+      state.storyTimerSelectedSec = normalizeTimerDuration(selectedSec);
+      setTimerDuration(selectedSec);
     });
   });
 

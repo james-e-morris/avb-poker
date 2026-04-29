@@ -3403,9 +3403,12 @@ function leaveGame() {
   setHistorySidebarExpanded(false);
   setExamplesSidebarExpanded(false);
   setCalcDetailsExpanded(false);
+  resetCalculatorSelectionsToDefault();
   state.sessionId = null;
   state.sessionData = null;
   state.currentVote = null;
+  state.questionVotePanicStartedAt = 0;
+  state.coffeeVotePourStartedAt = 0;
   state.wasRevealed = false;
   state.storyTimerWasRunning = false;
   state.storyTimerWasExpired = false;

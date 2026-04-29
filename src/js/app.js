@@ -840,8 +840,11 @@ function getTimerRemainingSeconds(timer, nowMs = Date.now()) {
   if (!timer) return TIMER_DEFAULT_SECONDS;
 
   if (timer.isRunning && timer.endsAt) {
-    const adjustedNowMs = state.dbMode === 'ably' ? nowMs - Number(state.timerClockOffsetMs || 0) : nowMs;
-    const remainingMs = Number(timer.endsAt) - adjustedNowMs;
+    // Use endsAt directly. endsAt is set by the moderator's clock at publish time;
+    // NTP-synced devices are accurate to within tens of milliseconds, which is
+    // negligible for a 30-second timer. A growing clock-offset correction caused
+    // the timer to jump in deployed (Ably) mode, so we intentionally omit it.
+    const remainingMs = Number(timer.endsAt) - nowMs;
     if (remainingMs <= 0) return 0;
     return clampTimerValue(Math.ceil(remainingMs / 1000), timer.durationSec);
   }
@@ -863,30 +866,14 @@ function getStoryTimerRuntime(session) {
   };
 }
 
-function syncTimerClockOffset(timer) {
-  if (state.dbMode !== 'ably') return;
-  if (!timer || !timer.isRunning || !timer.endsAt) return;
-
-  const durationSec = normalizeTimerDuration(timer.durationSec);
-  const fallbackRemaining = clampTimerValue(timer.remainingSec, durationSec) || durationSec;
-  const remainingSec = Number.isFinite(Number(timer.remainingSec))
-    ? clampTimerValue(timer.remainingSec, fallbackRemaining)
-    : fallbackRemaining;
-
-  const publisherNowMs = Number(timer.endsAt) - remainingSec * 1000;
-  if (!Number.isFinite(publisherNowMs)) return;
-
-  // Keep offset bounded to avoid extreme values from malformed payloads.
-  const rawOffset = Date.now() - publisherNowMs;
-  const boundedOffset = Math.max(-10 * 60 * 1000, Math.min(10 * 60 * 1000, rawOffset));
-
-  // Smooth minor transport jitter while still converging quickly.
-  if (!Number.isFinite(state.timerClockOffsetMs)) {
-    state.timerClockOffsetMs = boundedOffset;
-    return;
-  }
-
-  state.timerClockOffsetMs = Math.round(state.timerClockOffsetMs * 0.75 + boundedOffset * 0.25);
+function syncTimerClockOffset(_timer) {
+  // Clock-offset correction was removed because timer.remainingSec stores the
+  // full starting duration, not a live snapshot.  Computing
+  //   publisherNow = endsAt - remainingSec * 1000
+  // therefore always equals the start time, making rawOffset grow with elapsed
+  // time and corrupting the countdown in Ably (deployed) mode.
+  // Modern devices are NTP-synced to within milliseconds, so no correction
+  // is needed.  timerClockOffsetMs is left at 0 (its initialised value).
 }
 
 function formatStoryTimerClock(totalSeconds) {

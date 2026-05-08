@@ -732,6 +732,21 @@ Optional: include brief context about your project's tech stack, architecture, o
     </div>
 
     <!-- ======================================================
+       SESSION UNAVAILABLE MODAL
+       ====================================================== -->
+    <div id="modal-session-unavailable" class="modal-overlay" hidden>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-session-unavailable-title">
+        <h3 id="modal-session-unavailable-title">Session Ended</h3>
+        <p id="session-unavailable-message" class="muted-text">
+          This session is no longer available. Acknowledge to return home.
+        </p>
+        <div class="modal-buttons">
+          <button id="btn-session-unavailable-ack" class="btn btn-primary">Acknowledge</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
        TOAST
        ====================================================== -->
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>

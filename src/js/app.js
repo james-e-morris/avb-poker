@@ -55,6 +55,8 @@ const ADMIN_HISTORY_KEY = 'pp_admin_history_v1';
 const ADMIN_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const ADMIN_MAX_RECORDS = 500;
 const ABLY_AUDIT_EVENT = 'session_admin_audit';
+const ABLY_SESSION_HEARTBEAT_MS = 45 * 1000;
+const ABLY_HEARTBEAT_MAX_FAILURES = 3;
 
 let revealObserver = null;
 
@@ -1398,6 +1400,9 @@ function copyAuditToClipboard() {
 
 let ablyRealtime = null;
 let ablyChannel = null;
+let ablySessionHeartbeatTimer = null;
+let ablySessionHeartbeatFailures = 0;
+let pendingSessionKickAcknowledge = false;
 
 function getMaskedAblyKey(key) {
   if (!key) return '(missing)';
@@ -1480,6 +1485,70 @@ function publishPendingSessionIfNeeded(channel) {
   state.pendingSession = null;
 
   return ablyPublishState(channel, initial).then(() => true);
+}
+
+function forceLeaveUnrecoverableSession(message) {
+  if (!state.sessionId) return;
+
+  const modal = document.getElementById('modal-session-unavailable');
+  const messageEl = document.getElementById('session-unavailable-message');
+  const ackBtn = document.getElementById('btn-session-unavailable-ack');
+  if (!modal || !messageEl || !ackBtn) {
+    leaveGame();
+    return;
+  }
+
+  pendingSessionKickAcknowledge = true;
+  messageEl.textContent = message || 'Session is no longer available. Acknowledge to return home.';
+  modal.removeAttribute('hidden');
+  setTimeout(() => ackBtn.focus(), 0);
+}
+
+function acknowledgeForcedLeave() {
+  pendingSessionKickAcknowledge = false;
+
+  const modal = document.getElementById('modal-session-unavailable');
+  if (modal) modal.setAttribute('hidden', '');
+
+  leaveGame();
+}
+
+function stopAblySessionHeartbeat() {
+  if (ablySessionHeartbeatTimer) {
+    clearInterval(ablySessionHeartbeatTimer);
+    ablySessionHeartbeatTimer = null;
+  }
+  ablySessionHeartbeatFailures = 0;
+}
+
+function startAblySessionHeartbeat() {
+  stopAblySessionHeartbeat();
+  if (state.dbMode !== 'ably') return;
+
+  const publishHeartbeat = () => {
+    if (!ablyRealtime || !state.isModerator || !state.sessionId || !state.sessionData) return;
+    if (isRoomExpired(state.sessionData)) return;
+
+    const channel = ablyRealtime.channels.get(getAblyChannelName(state.sessionId));
+    ablyPublishState(channel, deepClone(state.sessionData))
+      .then(() => {
+        ablySessionHeartbeatFailures = 0;
+      })
+      .catch((err) => {
+        ablySessionHeartbeatFailures += 1;
+        console.warn(
+          `[Planning Poker] Ably heartbeat publish failed (${ablySessionHeartbeatFailures}/${ABLY_HEARTBEAT_MAX_FAILURES}):`,
+          err?.message || err
+        );
+        if (ablySessionHeartbeatFailures >= ABLY_HEARTBEAT_MAX_FAILURES) {
+          forceLeaveUnrecoverableSession('Realtime connection lost. Moderator session closed.');
+        }
+      });
+  };
+
+  // Publish once immediately so newcomers can join even before the next interval tick.
+  publishHeartbeat();
+  ablySessionHeartbeatTimer = setInterval(publishHeartbeat, ABLY_SESSION_HEARTBEAT_MS);
 }
 
 // ---- Demo Mode (BroadcastChannel + localStorage) -----------
@@ -1794,9 +1863,11 @@ function subscribeToSession(sessionId) {
     };
 
     ablyChannel.subscribe('session_state', onState);
+    startAblySessionHeartbeat();
     state.unsubAbly = () => {
       if (ablyChannel) ablyChannel.unsubscribe('session_state', onState);
       ablyChannel = null;
+      stopAblySessionHeartbeat();
     };
 
     ablyGetLatestState(ablyChannel)
@@ -1806,7 +1877,11 @@ function subscribeToSession(sessionId) {
         } else {
           publishPendingSessionIfNeeded(ablyChannel).catch((err) => {
             console.error('[Planning Poker] Failed to publish initial Ably state:', err);
-            showToast(err.message || 'Could not initialize room state', 'error', 7000);
+            if (state.isModerator) {
+              forceLeaveUnrecoverableSession(err.message || 'Could not initialize room state');
+            } else {
+              showToast(err.message || 'Could not initialize room state', 'error', 7000);
+            }
           });
         }
       })
@@ -1816,12 +1891,26 @@ function subscribeToSession(sessionId) {
         publishPendingSessionIfNeeded(ablyChannel)
           .then((published) => {
             if (!published) {
-              showToast(err.message || 'Could not read room state from Ably', 'error', 7000);
+              if (state.isModerator) {
+                forceLeaveUnrecoverableSession(err.message || 'Could not read room state from Ably');
+              } else {
+                showToast(err.message || 'Could not read room state from Ably', 'error', 7000);
+              }
             }
           })
           .catch((publishErr) => {
             console.error('[Planning Poker] Failed to publish initial Ably state after history error:', publishErr);
-            showToast(publishErr.message || err.message || 'Could not initialize room state from Ably', 'error', 7000);
+            if (state.isModerator) {
+              forceLeaveUnrecoverableSession(
+                publishErr.message || err.message || 'Could not initialize room state from Ably'
+              );
+            } else {
+              showToast(
+                publishErr.message || err.message || 'Could not initialize room state from Ably',
+                'error',
+                7000
+              );
+            }
           });
       });
   } else {
@@ -1832,6 +1921,7 @@ function subscribeToSession(sessionId) {
 }
 
 function unsubscribeFromSession() {
+  stopAblySessionHeartbeat();
   if (state.unsubAbly) {
     state.unsubAbly();
     state.unsubAbly = null;
@@ -3402,10 +3492,15 @@ function leaveGame() {
   state.questionVotePanicStartedAt = 0;
   state.coffeeVotePourStartedAt = 0;
   state.wasRevealed = false;
+  pendingSessionKickAcknowledge = false;
   state.storyTimerWasRunning = false;
   state.storyTimerWasExpired = false;
   state.timerClockOffsetMs = 0;
   clearTimerBurstEffects();
+
+  const unavailableModal = document.getElementById('modal-session-unavailable');
+  if (unavailableModal) unavailableModal.setAttribute('hidden', '');
+
   renderSessionHistory([]);
   history.replaceState({}, '', window.location.pathname);
   showView('home');
@@ -3814,6 +3909,14 @@ function setupEventListeners() {
       document.getElementById('modal-next-story').setAttribute('hidden', '');
     }
   });
+
+  const sessionUnavailableAckBtn = document.getElementById('btn-session-unavailable-ack');
+  if (sessionUnavailableAckBtn) {
+    sessionUnavailableAckBtn.addEventListener('click', () => {
+      if (!pendingSessionKickAcknowledge) return;
+      acknowledgeForcedLeave();
+    });
+  }
 
   // ---- Theme ----
   document.getElementById('btn-toggle-theme').addEventListener('click', toggleTheme);
